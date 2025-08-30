@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Raleway } from "next/font/google";
 import "./globals.css";
+import NavBar from "./components/nav-bar/nav-bar";
 
 const raleway = Raleway({
   variable: "--font-Raleway",
@@ -23,6 +24,7 @@ export default function RootLayout({
       <body
         className={`${raleway.className} antialiased`}
       >
+        <NavBar />
         {children}
       </body>
     </html>

@@ -1,14 +1,20 @@
-// import Image from "next/image";
-import NavBar from "./components/nav-bar/nav-bar";
+import Image from "next/image";
 
 export default function Home() {
   return (
-    // <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-    //   <NavBar />
-    // </div>
 
-    <div className="min-h-screen grid grid-rows-[20px_1fr_20px]">
-      <NavBar />
+
+    <div className="min-h-screen">
+      <div>
+        <div>
+          <h2>
+          LET’S EXPLORE UNIQUE CLOTHES
+          </h2>
+        </div>
+        <div>
+          <Image src="/assets/hero_image.jpg" alt="Hero Image " width={750} height={750} />
+        </div>
+      </div>
     </div>
   );
 }
