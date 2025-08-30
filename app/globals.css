@@ -1,1 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Charm:wght@400;700&display=swap');
 @import "tailwindcss";
+
+@theme{
+
+    /* Fonts */
+    --font-charm: 'Charm';
+
+    /* Colors */
+    --color-beige: #EADFCD;
+    --color-light-green : #306D42;
+    --color-dark-green : #2F432A;
+}
+
+/* Hide native scrollbars while preserving scroll behavior */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Tweak navbar brand area between 769px and 887px */
+@media (min-width: 769px) and (max-width: 887px) {
+  /* Left brand row: let it flex and reduce gap */
+  .top-navbar > div > div:first-child {
+    gap: 3rem;            /* reduce logo–title gap */
+    flex: 1 1 auto;         /* allow brand row to shrink */
+    min-width: 0;           /* enable child text to wrap inside */
+  }
+
+  /* Tagline: smaller font and allow wrapping (no overlap) */
+  .top-navbar > div > div:first-child h2 {
+    font-size: 1.5rem;    /* Tailwind text-lg */
+    white-space: normal;    /* allow wrapping */
+    overflow: visible;      /* don't clip */
+    text-overflow: clip;    /* no ellipsis */
+  }
+}

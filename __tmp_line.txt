@@ -1,0 +1,1 @@
+            <h2 className='min-w-0 font-charm text-dark-green leading-tight text-xl sm:text-2xl lg:text-3xl [text-wrap:balance] max-w-[min(60ch,100%)] flex '>Design your style, wear your identity ✨</h2>
