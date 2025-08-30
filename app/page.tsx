@@ -4,8 +4,8 @@ export default function Home() {
   return (
 
 
-    <div className="min-h-screen">
-      <div className="">
+    <div className="min-h-screen max-w-screen">
+      <div className="flex items-center justify-around">
         <div>
           <h2>
           LET’S EXPLORE UNIQUE CLOTHES
@@ -15,7 +15,7 @@ export default function Home() {
           </p>
         </div>
         <div>
-          <Image src="/assets/hero_image.jpg" alt="Hero Image " width={750} height={750} />
+          <Image src="/assets/hero_image.jpg" alt="Hero Image " width={800} height={750} />
         </div>
       </div>
     </div>
