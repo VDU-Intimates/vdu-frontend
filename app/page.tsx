@@ -5,11 +5,14 @@ export default function Home() {
 
 
     <div className="min-h-screen">
-      <div>
+      <div className="">
         <div>
           <h2>
           LET’S EXPLORE UNIQUE CLOTHES
           </h2>
+          <p>
+            Create Your Own STYLE
+          </p>
         </div>
         <div>
           <Image src="/assets/hero_image.jpg" alt="Hero Image " width={750} height={750} />

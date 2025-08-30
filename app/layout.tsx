@@ -22,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${raleway.className} antialiased`}
+        className={`${raleway.className} antialiased overflow-hidden`}
       >
         <NavBar />
         {children}
