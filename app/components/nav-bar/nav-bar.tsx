@@ -149,7 +149,7 @@ const NavBar = () => {
             }}>
                 <p className='text-md max-[550px]:text-sm max-[420px]:text-xs font-semibold leading-none'>New Arrivals</p>
                 <Image src={dropdownA ? '/assets/arrow_up.svg' : '/assets/arrow_down.svg'}
-                 alt='Cart-Icon' width={16} height={16} className='transition-all duration-300 ease-in-out'/>
+                 alt='Arrow Icon' width={16} height={16} className='transition-all duration-300 ease-in-out'/>
               </div>
               <ul className={`bg-[#e0deda] cursor-pointer w-full md:w-max md:min-w-[12rem]
                                md:absolute md:top-full md:left-0 md:z-[70] mt-1 rounded-lg shadow-md
@@ -182,7 +182,7 @@ const NavBar = () => {
             }}>
                 <p className='text-md max-[550px]:text-sm max-[420px]:text-xs font-semibold leading-none'>Men</p>
                 <Image src={dropdownB ? '/assets/arrow_up.svg' : '/assets/arrow_down.svg'}
-                alt='Cart-Icon' width={16} height={16} className='transition-all duration-300 ease-in-out'/>
+                alt='Arrow Icon' width={16} height={16} className='transition-all duration-300 ease-in-out'/>
               </div>
               <ul className={`bg-[#e0deda] cursor-pointer w-full md:w-max
                                md:min-w-[12rem] md:absolute md:top-full md:left-0 md:z-[70]
@@ -214,7 +214,7 @@ const NavBar = () => {
             }}>
                 <p className='text-md max-[550px]:text-sm max-[420px]:text-xs font-semibold leading-none'>Women</p>
                 <Image src={dropdownC ? '/assets/arrow_up.svg' : '/assets/arrow_down.svg'}
-                 alt='Cart-Icon' width={16} height={16} className='transition-all duration-300 ease-in-out'/>
+                 alt='Arrow Icon' width={16} height={16} className='transition-all duration-300 ease-in-out'/>
               </div>
               <ul className={`bg-[#e0deda] cursor-pointer w-full md:w-max md:min-w-[12rem]
                                md:absolute md:top-full md:left-0 md:z-[70] mt-1 rounded-lg 
@@ -248,7 +248,7 @@ const NavBar = () => {
             }}>
                 <p className='text-md max-[550px]:text-sm max-[420px]:text-xs font-semibold leading-none'>Kids</p>
                 <Image src={dropdownD ? '/assets/arrow_up.svg' : '/assets/arrow_down.svg'}
-                 alt='Cart-Icon' width={16} height={16} className='transition-all duration-300 ease-in-out'/>
+                 alt='Arrow Icon' width={16} height={16} className='transition-all duration-300 ease-in-out'/>
               </div>
               <ul className={`bg-[#e0deda] cursor-pointer w-full md:w-max md:min-w-[12rem]
                                md:absolute md:top-full md:left-0 md:z-[70] mt-1 rounded-lg shadow-md origin-top
