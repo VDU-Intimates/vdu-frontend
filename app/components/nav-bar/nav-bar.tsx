@@ -137,7 +137,9 @@ const NavBar = () => {
               </button>
             )}
 
-<div className='flex flex-col pr-10 items-center relative shrink min-w-0 w-36 max-md:min-w-[9.5rem] md:w-auto min-[800px]:flex-1 min-[800px]:basis-0 min-[800px]:min-w-0 gap-1 sm:gap-2'>
+            <div className='flex flex-col pr-10 items-center relative shrink min-w-0 w-36
+                            max-md:min-w-[9.5rem] md:w-auto min-[800px]:flex-1 min-[800px]:basis-0 min-[800px]:min-w-0
+                             gap-1 sm:gap-2'>
 
               <div className='flex gap-2 cursor-pointer select-none items-center h-8 sm:h-9 md:h-10' onClick={() => {
               setDropdownA(v => !v);
@@ -146,11 +148,17 @@ const NavBar = () => {
               setDropdownD(false);
             }}>
                 <p className='text-md max-[550px]:text-sm max-[420px]:text-xs font-semibold leading-none'>New Arrivals</p>
-                <Image src={dropdownA ? '/assets/arrow_up.svg' : '/assets/arrow_down.svg'} alt='Cart-Icon' width={16} height={16} className='transition-all duration-300 ease-in-out'/>
+                <Image src={dropdownA ? '/assets/arrow_up.svg' : '/assets/arrow_down.svg'}
+                 alt='Cart-Icon' width={16} height={16} className='transition-all duration-300 ease-in-out'/>
               </div>
-              <ul className={`bg-[#e0deda] cursor-pointer w-full md:w-max md:min-w-[12rem] md:absolute md:top-full md:left-0 md:z-[70] mt-1 rounded-lg shadow-md origin-top flex flex-col  items-center  transition-[max-height,opacity,transform] duration-300 ease-out ${
-              dropdownA ? "max-h-[240px] opacity-100 scale-y-100 pointer-events-auto" : "max-h-0 opacity-0 scale-y-95 pointer-events-none"
-              }`}
+              <ul className={`bg-[#e0deda] cursor-pointer w-full md:w-max md:min-w-[12rem]
+                               md:absolute md:top-full md:left-0 md:z-[70] mt-1 rounded-lg shadow-md
+                                origin-top flex flex-col  items-center  transition-[max-height,opacity,transform]
+                                 duration-300 ease-out 
+                                 ${
+                                    dropdownA ? "max-h-[240px] opacity-100 scale-y-100 pointer-events-auto" 
+                                    : "max-h-0 opacity-0 scale-y-95 pointer-events-none"
+                                  }`}
               >
               {newArrivalItems.map((item, key) => (
                 <li key={key} className={`text-[11px] sm:text-sm md:text-md text-center 
