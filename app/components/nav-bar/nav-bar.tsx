@@ -2,6 +2,7 @@
 import Image from 'next/image';
 import React, { useEffect, useRef, useState } from 'react'
 import { Menu, X } from "lucide-react";
+import Link from 'next/link';
 
 const NavBar = () => {
 
@@ -38,7 +39,7 @@ const NavBar = () => {
 
           {/* Need to fix the Heading issue at around 768px and the kids ul issue */}
           <div className='flex items-center gap-20 w-fit h-fit max-w-screen-lg mx-4 max-md:mx-0  '>
-            <Image src='/assets/logo.jpg' alt='Logo' width={60} height={60} className='max-md:w-12'/>
+            <Link href="/"><Image src='/assets/logo.jpg' alt='Logo' width={60} height={60} className='max-md:w-12'/></Link>
             <h2 className='min-w-0 font-charm text-dark-green leading-tight text-xl sm:text-2xl 
                            lg:text-3xl [text-wrap:balance]
                            max-w-[min(60ch,100%)] flex '>
