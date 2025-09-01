@@ -1,6 +1,12 @@
 import Image from 'next/image'
 import React from 'react'
-
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
 
 const HeroSection = () => {
   return (
@@ -20,14 +26,19 @@ const HeroSection = () => {
   {/* Right media panel */}
   <div className="relative w-full md:w-1/2 h-[260px] sm:h-[340px] md:h-full">
     {/* Next/Image with cover */}
-    <Image
-      src="/assets/hero_image.jpg"
-      alt="Hero Image"
-      fill
-      className="object-cover"
-      priority
-      sizes="(max-width: 768px) 100vw, 50vw"
-    />
+    <Carousel className="w-full">
+          <CarouselContent>
+            {[1,2,3].map((n) => (
+              <CarouselItem key={n} className="basis-full">
+                <div className="h-48 border rounded-2xl grid place-items-center">
+                  Slide {n}
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious />
+          <CarouselNext />
+        </Carousel>
   </div>
 </div>
 

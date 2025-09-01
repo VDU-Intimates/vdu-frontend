@@ -1,5 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Charm:wght@400;700&display=swap');
 @import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
 
 @theme{
 
@@ -38,3 +41,64 @@
     text-overflow: clip;    /* no ellipsis */
   }
 }
+
+/* === shadcn minimal variables (no global resets) === */
+:root {
+  --background: 255 255 255;             /* white */
+  --foreground: 15 23 42;                 /* slate-900 */
+
+  --muted: 241 245 249;
+  --muted-foreground: 100 116 139;
+
+  --border: 226 232 240;
+  --input: 226 232 240;
+  --ring: 48 109 66;                      /* your light-green */
+
+  --primary: 48 109 66;                   /* your light-green */
+  --primary-foreground: 255 255 255;
+
+  --secondary: 234 223 205;               /* your navbar beige */
+  --secondary-foreground: 47 67 42;       /* your dark-green */
+
+  --destructive: 239 68 68;
+  --destructive-foreground: 255 255 255;
+
+  --accent: 234 223 205;
+  --accent-foreground: 47 67 42;
+
+  --popover: 255 255 255;
+  --popover-foreground: 15 23 42;
+
+  --card: 255 255 255;
+  --card-foreground: 15 23 42;
+
+  --radius: 12px; /* matches your rounded aesthetic */
+}
+
+/* Optional dark theme (only if you plan to use it) */
+.dark {
+  --background: 8 13 20;
+  --foreground: 241 245 249;
+  --border: 30 41 59;
+  --input: 30 41 59;
+  --ring: 48 109 66;
+
+  --primary: 48 109 66;
+  --primary-foreground: 255 255 255;
+
+  --secondary: 47 67 42;
+  --secondary-foreground: 234 223 205;
+
+  --muted: 15 23 42;
+  --muted-foreground: 148 163 184;
+
+  --accent: 47 67 42;
+  --accent-foreground: 234 223 205;
+
+  --destructive: 239 68 68;
+  --destructive-foreground: 255 255 255;
+
+  --card: 8 13 20;
+  --card-foreground: 241 245 249;
+}
+
