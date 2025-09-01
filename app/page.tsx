@@ -1,12 +1,10 @@
-// import Image from "next/image";
-import Footer from "./components/footer/footer";
-import NavBar from "./components/nav-bar/nav-bar";
+
+'use client';
+import HeroSection from "./components/hero-section/hero-section";
 
 export default function Home() {
   return (
-    <div className="">
-      <NavBar />
-      <Footer />
-    </div>
+
+    <HeroSection />
   );
 }
