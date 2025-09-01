@@ -3,6 +3,7 @@ import Image from 'next/image';
 import React, { useEffect, useRef, useState } from 'react'
 import { Menu, X } from "lucide-react";
 import Link from 'next/link';
+import SearchBar from '../common-components/search-bar';
 
 const NavBar = () => {
 
@@ -35,16 +36,13 @@ const NavBar = () => {
       {/* Top Navbar */}
       <div className='flex items-center max-md:justify-around justify-between
                       min-w-screen border-b-2 px-10 h-[110px] max-md:h-[130px] 
-                      max-md:p-3 max-md:gap-5 '>
+                      max-md:p-3  '>
 
           {/* Need to fix the Heading issue at around 768px and the kids ul issue */}
-          <div className='flex items-center gap-20 w-fit h-fit max-w-screen-lg mx-4 max-md:mx-0  '>
-            <Link href="/"><Image src='/assets/logo.jpg' alt='Logo' width={60} height={60} className='max-md:w-12'/></Link>
-            <h2 className='min-w-0 font-charm text-dark-green leading-tight text-xl sm:text-2xl 
-                           lg:text-3xl [text-wrap:balance]
-                           max-w-[min(60ch,100%)] flex '>
-              Design your style, wear your identity ✨
-            </h2>
+          <div className='flex items-center gap-30 max-[500px]:gap-10  max-[300px]:gap-5 
+                           w-fit h-fit max-w-screen-lg mx-4 max-md:mx-0  '>
+            <Link href="/" ><Image src='/assets/logo.jpg' alt='Logo' width={60} height={60} className='max-md:w-12'/></Link>
+            <SearchBar size={'lg'}/>
           </div>
 
           <div className={`flex items-start justify-center gap-20 md:relative md:min-h-auto
@@ -62,21 +60,9 @@ const NavBar = () => {
             >
             <X size={32} /> 
             </button>
-            <div className={`gap-6 relative w-[250px] cursor-pointer max-md:w-50 `}>
-              <input
-                type="text"
-                placeholder="Search Here"
-                className="w-full h-10 border-light-green outline-0 border-2 pr-10 pl-4 rounded-2xl
-                           placeholder:text-sm font-bold placeholder:text-dark-green "
-              />
-              <Image
-                src="/assets/search_icon.svg"
-                alt="Search-Icon"
-                width={20}
-                height={20}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
-              />
-            </div>
+            <p className="text-sm text-dark-green font-medium">
+            🚚 Quick Delivery &nbsp; | &nbsp; 🔄 Easy Returns &nbsp; | &nbsp; <Link href='/ContactUs'>☎ Support</Link>
+            </p>
 
             <div className='flex relative flex-shrink-0 w-fit h-fit cursor-pointer gap-5'>
               <p className={` text-dark-green font-bold ${openTop ? 'flex' : 'hidden'}`}>Cart page</p>
