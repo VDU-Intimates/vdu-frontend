@@ -1,3 +1,4 @@
+
 'use client';
 import BestSelling from "./components/best-selling-section/best-selling-section";
 import HeroSection from "./components/hero-section/hero-section";
