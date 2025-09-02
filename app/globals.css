@@ -13,7 +13,26 @@
     --color-beige: #EADFCD;
     --color-light-green : #306D42;
     --color-dark-green : #2F432A;
+
+    
+
+    /* Animations */
+    --animate-rotate-border: border-rotate 2s linear infinite;
+
+    @keyframes border-rotate {
+      to{
+        --border-angle: 360deg;
+      }
+    }
+
 }
+
+@property --border-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
 
 /* Hide native scrollbars while preserving scroll behavior */
 .no-scrollbar {
