@@ -9,6 +9,19 @@ const NavBar = () => {
 
   const newArrivalItems = ["Men" , "Women" , "Kids"];
   const otherItems = ["Undergarment" , "Casual Wear" , "Night Wear"];
+  const topNavItems = [
+    {
+    Label:'Bulk Order', href:'/BulkOrder'
+    },
+    {
+      Label:'Contact Us', href:'/ContactUs'
+    },
+    {
+      Label:'About Us', href:'/AboutUs'
+    },
+]
+
+
 
   const[openTop,setOpenTop] = useState(false);
   const[openBottom,setOpenBottom] = useState(false);
@@ -36,20 +49,30 @@ const NavBar = () => {
       {/* Top Navbar */}
       <div className='flex items-center max-md:justify-around justify-between
                       min-w-screen border-b-2 px-10 h-[110px] max-md:h-[130px] 
-                      max-md:p-3  '>
+                      max-md:p-5 max-[340px]:overflow-scroll max-[340px]:no-scrollbar '>
 
-          {/* Need to fix the Heading issue at around 768px and the kids ul issue */}
-          <div className='flex items-center gap-30 max-[500px]:gap-10  max-[300px]:gap-5 
-                           w-fit h-fit max-w-screen-lg mx-4 max-md:mx-0  '>
-            <Link href="/" ><Image src='/assets/logo.jpg' alt='Logo' width={60} height={60} className='max-md:w-12'/></Link>
-            <SearchBar size={'lg'}/>
+          
+          <div className="flex items-center gap-20 max-[500px]:gap-50 
+                        w-fit h-fit max-w-screen-lg mx-4 max-md:mx-0 max-lg:w-[300px] max-xl:gap-10">
+            <Link href="/" className="shrink-0">
+              <Image
+                src="/assets/icons/logo.jpg"
+                alt="Logo"
+                width={60}
+                height={60}
+                className="min-w-[48px] min-h-[48px] w-[60px] h-[60px]"
+              />
+            </Link>
+
+            <SearchBar size="md" />
           </div>
 
-          <div className={`flex items-start justify-center gap-20 md:relative md:min-h-auto
+          <div className={`flex items-start justify-center gap-20  md:relative md:min-h-auto
                           md:transition-none max-md:fixed max-md:inset-y-0 max-md:right-0 max-md:min-w-60
-                        max-md:bg-beige max-md:transition-transform max-md:duration-500 max-md:ease-in-out 
+                        max-md:bg-beige max-[350px]:w-[300px]  max-[350px]:overflow-x-scroll 
+                        max-[350px]:no-scrollbar max-md:transition-transform max-md:duration-500 max-md:ease-in-out 
                         ${
-                          openTop ? "max-md:translate-x-0 max-md:opacity-100 z-1000 max-md:text-md max-sm:text-sm"
+                          openTop ? "max-md:translate-x-0 max-md:opacity-100 z-[1000] max-md:text-md max-sm:text-sm"
                            : "max-md:translate-x-full max-md:opacity-0"}`
                           }>
             <div className='flex md:flex-row  flex-col max-md:items-center
@@ -60,13 +83,20 @@ const NavBar = () => {
             >
             <X size={32} /> 
             </button>
-            <p className="text-sm text-dark-green font-medium">
-            🚚 Quick Delivery &nbsp; | &nbsp; 🔄 Easy Returns &nbsp; | &nbsp; <Link href='/ContactUs'>☎ Support</Link>
-            </p>
 
+            <div className='flex relative flex-shrink-1 w-fit h-fit gap-10 items-center max-md:flex-col  justify-center max-xl:gap-5'>
+                {topNavItems.map((item,index) => (
+                <p key={index} className="text-dark-green font-medium 
+                    text-sm sm:text-sm  hover:font-bold transition-all max-md:font-bold lg:text-sm xl:text-base max-xl:truncate
+                    ">
+                  <Link href={item.href}>{item.Label} &nbsp;</Link>
+                </p>
+                ))}
+            </div>
             <div className='flex relative flex-shrink-0 w-fit h-fit cursor-pointer gap-5'>
-              <p className={` text-dark-green font-bold ${openTop ? 'flex' : 'hidden'}`}>Cart page</p>
-              <Image src='/assets/Shopping_cart.svg' alt='Cart-Icon' width={32} height={25} className='max-md:w-6'/>
+              <p className={` text-dark-green font-bold text-sm sm:text-sm md:text-xs lg:text-sm xl:text-base 
+                ${openTop ? 'flex' : 'hidden'}`}>Cart page</p>
+              <Image src='/assets/icons/Shopping_cart.svg' alt='Cart-Icon' width={32} height={25} className='max-md:w-6'/>
               <span className="absolute -top-3 right-3.5 w-5 h-5 flex items-center justify-center rounded-full
                                bg-light-green text-white text-sm font-bold max-md:text-xs
                                 max-md:w-4 max-md:h-4">0
@@ -74,9 +104,10 @@ const NavBar = () => {
             </div>
           
             <div className='flex items-center cursor-pointer gap-3 mr-3'>
-              <p className='text-dark-green font-bold underline'> Login /
+              <p className='text-dark-green font-bold underline text-sm sm:text-sm md:text-xs lg:text-sm 
+              xl:text-base'> Login /
               Sign Up</p>
-              <Image src='/assets/account_circle.svg' alt='Account-Icon' width={32} height={32}/>
+              <Image src='/assets/icons/account_circle.svg' alt='Account-Icon' width={32} height={32}/>
             </div>
           </div>
           </div>
@@ -135,7 +166,7 @@ const NavBar = () => {
               setDropdownD(false);
             }}>
                 <p className='text-md max-[550px]:text-sm max-[420px]:text-xs font-semibold leading-none'>New Arrivals</p>
-                <Image src={dropdownA ? '/assets/arrow_up.svg' : '/assets/arrow_down.svg'}
+                <Image src={dropdownA ? '/assets/icons/arrow_up.svg' : '/assets/icons/arrow_down.svg'}
                  alt='Arrow Icon' width={16} height={16} className='transition-all duration-300 ease-in-out'/>
               </div>
               <ul className={`bg-[#e0deda] cursor-pointer w-full md:w-max md:min-w-[12rem]
@@ -168,7 +199,7 @@ const NavBar = () => {
               setDropdownD(false);
             }}>
                 <p className='text-md max-[550px]:text-sm max-[420px]:text-xs font-semibold leading-none'>Men</p>
-                <Image src={dropdownB ? '/assets/arrow_up.svg' : '/assets/arrow_down.svg'}
+                <Image src={dropdownB ? '/assets/icons/arrow_up.svg' : '/assets/icons/arrow_down.svg'}
                 alt='Arrow Icon' width={16} height={16} className='transition-all duration-300 ease-in-out'/>
               </div>
               <ul className={`bg-[#e0deda] cursor-pointer w-full md:w-max
@@ -200,7 +231,7 @@ const NavBar = () => {
               setDropdownD(false);
             }}>
                 <p className='text-md max-[550px]:text-sm max-[420px]:text-xs font-semibold leading-none'>Women</p>
-                <Image src={dropdownC ? '/assets/arrow_up.svg' : '/assets/arrow_down.svg'}
+                <Image src={dropdownC ? '/assets/icons/arrow_up.svg' : '/assets/icons/arrow_down.svg'}
                  alt='Arrow Icon' width={16} height={16} className='transition-all duration-300 ease-in-out'/>
               </div>
               <ul className={`bg-[#e0deda] cursor-pointer w-full md:w-max md:min-w-[12rem]
@@ -234,7 +265,7 @@ const NavBar = () => {
               setDropdownD(v => !v);
             }}>
                 <p className='text-md max-[550px]:text-sm max-[420px]:text-xs font-semibold leading-none'>Kids</p>
-                <Image src={dropdownD ? '/assets/arrow_up.svg' : '/assets/arrow_down.svg'}
+                <Image src={dropdownD ? '/assets/icons/arrow_up.svg' : '/assets/icons/arrow_down.svg'}
                  alt='Arrow Icon' width={16} height={16} className='transition-all duration-300 ease-in-out'/>
               </div>
               <ul className={`bg-[#e0deda] cursor-pointer w-full md:w-max md:min-w-[12rem]

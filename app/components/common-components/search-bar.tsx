@@ -30,7 +30,7 @@ const SearchBar = ({size} : SearchBarProps) => {
                    placeholder:text-sm font-bold placeholder:text-dark-green"
       />
       <Image
-        src="/assets/search_icon.svg"
+        src="/assets/icons/search_icon.svg"
         alt="Search-Icon"
         width={20}
         height={20}
