@@ -9,6 +9,19 @@ const NavBar = () => {
 
   const newArrivalItems = ["Men" , "Women" , "Kids"];
   const otherItems = ["Undergarment" , "Casual Wear" , "Night Wear"];
+  const topNavItems = [
+    {
+    Label:'Bulk Order', href:'/BulkOrder'
+    },
+    {
+      Label:'Contact Us', href:'/ContactUs'
+    },
+    {
+      Label:'About Us', href:'/AboutUs'
+    },
+]
+
+
 
   const[openTop,setOpenTop] = useState(false);
   const[openBottom,setOpenBottom] = useState(false);
@@ -36,7 +49,7 @@ const NavBar = () => {
       {/* Top Navbar */}
       <div className='flex items-center max-md:justify-around justify-between
                       min-w-screen border-b-2 px-10 h-[110px] max-md:h-[130px] 
-                      max-md:p-5 max-[300px]:overflow-scroll max-[300px]:no-scrollbar '>
+                      max-md:p-5 max-[340px]:overflow-scroll max-[340px]:no-scrollbar '>
 
           
           <div className="flex items-center gap-20 max-[500px]:gap-50 
@@ -51,7 +64,7 @@ const NavBar = () => {
               />
             </Link>
 
-            <SearchBar size="lg" />
+            <SearchBar size="md" />
           </div>
 
           <div className={`flex items-start justify-center gap-20  md:relative md:min-h-auto
@@ -71,12 +84,14 @@ const NavBar = () => {
             <X size={32} /> 
             </button>
 
-            <div className='flex relative flex-shrink-1 w-fit h-fit  '>
-              <p className="text-dark-green font-medium 
-                  text-sm sm:text-sm md:text-xs lg:text-sm xl:text-base max-[915px]:truncate
-                  ">
-              🚚 Quick Delivery &nbsp; | &nbsp; 🔄 Easy Returns &nbsp; | &nbsp; <Link href='/ContactUs'>☎ Support</Link>
-              </p>
+            <div className='flex relative flex-shrink-1 w-fit h-fit gap-10 items-center max-md:flex-col  justify-center max-xl:gap-5'>
+                {topNavItems.map((item,index) => (
+                <p key={index} className="text-dark-green font-medium 
+                    text-sm sm:text-sm  hover:font-bold transition-all max-md:font-bold lg:text-sm xl:text-base max-xl:truncate
+                    ">
+                  <Link href={item.href}>{item.Label} &nbsp;</Link>
+                </p>
+                ))}
             </div>
             <div className='flex relative flex-shrink-0 w-fit h-fit cursor-pointer gap-5'>
               <p className={` text-dark-green font-bold text-sm sm:text-sm md:text-xs lg:text-sm xl:text-base 

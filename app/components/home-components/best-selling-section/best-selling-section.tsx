@@ -2,8 +2,8 @@
 "use client";
 
 import Image from "next/image";
-import ProductCard from "../product-card/product-card";
-import Buttons from "../common-components/button";
+import ProductCard from "../../product-card/product-card";
+import Buttons from "../../common-components/button";
 import { ArrowRight } from "lucide-react";
 
 type Product = {
@@ -52,7 +52,7 @@ const products: Product[] = [
 
 export default function BestSelling() {
   return (
-    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 mt-20 max-md:px-5">
+    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 mt-20 ">
       {/* Title */}
       <h2 className="mb-6 text-[clamp(28px,5vw,48px)] font-extrabold tracking-wide
                      text-emerald-700 underline underline-offset-8 text-center">

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Raleway } from "next/font/google";
 import "./globals.css";
-import NavBar from "./components/nav-bar/nav-bar";
+import { Toaster } from "react-hot-toast";
 
 const raleway = Raleway({
   variable: "--font-Raleway",
@@ -22,9 +22,21 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${raleway.className} antialiased overflow-x-hidden`}
+        className={`${raleway.className} antialiased overflow-x-hidden `}
       >
-        <NavBar />
+        <Toaster position="top-right" reverseOrder={false} toastOptions={{
+         success: {
+          style: {
+            background: "#3B7A57", // deep green
+            color: "#F5F5DC",     // beige text
+          },
+        },
+        error: {
+          style: {
+            background: "#BB4848", // muted red (your redTransparent button color)
+            color: "#FFFFFF",      // white text
+          }}
+        }}/>
         {children}
       </body>
     </html>

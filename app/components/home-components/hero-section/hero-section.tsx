@@ -9,23 +9,23 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel"
-import PrimaryButton from '../common-components/primary-button';
+import PrimaryButton from '../../common-components/primary-button';
 import { Brush } from 'lucide-react';
 import Link from 'next/link';
 
 const HeroSection = () => {
 
   const sliderImages = [
-    '/assets/hero_image_1.jpg',
-    '/assets/hero_image_2.jpg',
-    '/assets/hero_image_3.jpg',
-    '/assets/hero_image_4.jpg'
+    '/assets/images/hero_image_1.jpg',
+    '/assets/images/hero_image_2.jpg',
+    '/assets/images/hero_image_3.jpg',
+    '/assets/images/hero_image_4.jpg'
   ]
 
   return (
 
     // Need to fix the responsiveness
-    <div className='max-md:px-5 px-10'>
+    
       <div className="flex flex-col md:flex-row items-stretch bg-[#6a9563] relative w-full max-md:mt-10
                       md:h-[560px] ">
         {/* Left panel */}
@@ -53,7 +53,8 @@ const HeroSection = () => {
                 <CarouselContent>
                   {sliderImages.map((image,key) => (
                     <CarouselItem key={key} className="basis-full">
-                      <Image src={image} alt='Hero Image'  width={600} height={900} className='w-700 max-md:w-400 max-md:h-100 h-200 object-fill' />
+                      <Image src={image} alt='Hero Image'  width={600} height={900} className='w-700 max-md:w-400
+                               max-md:h-100 h-200 object-fill' />
                     </CarouselItem>
                   ))}
                   
@@ -65,7 +66,7 @@ const HeroSection = () => {
               </Carousel>
         </div>
       </div>
-    </div>
+   
   )
 }
 
