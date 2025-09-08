@@ -200,7 +200,7 @@ const Register = () => {
           {/* Right: image */}
           <div className="relative lg:border-l border-black/5 min-h-[420px] lg:min-h-[560px]">
             <Image
-              src="/assets/images/model2.jpg"
+              src="/assets/model2.jpg"
               alt="Model wearing intimates"
               fill
               priority
