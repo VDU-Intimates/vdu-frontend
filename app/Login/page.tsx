@@ -155,7 +155,9 @@ const Login = () => {
                 <button
                   type="button"
                   disabled
-                  className="rounded-xl border border-neutral-300 bg-white py-2 font-medium flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"
+                  className="rounded-xl border border-neutral-300 bg-white py-2
+                   font-medium flex items-center justify-center gap-2 opacity-50
+                    cursor-not-allowed"
                   title="Google not configured (JWT auth in use)"
                 >
                   {/* icon placeholder to keep layout identical */}

@@ -411,7 +411,7 @@ export default function BulkOrders() {
 
             <div className="mt-6 flex justify-center">
               {getToken() !== '' ? (
-                <Link href="/Cart">
+                <Link href="#">
                   <Buttons
                     context={`REVIEW TOTAL -  Rs. ${totalValue.toLocaleString()}`}
                     icon={ShoppingCart}

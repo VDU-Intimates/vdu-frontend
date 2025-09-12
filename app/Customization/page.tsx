@@ -10,9 +10,6 @@ import Buttons from '../components/common-components/button';
 import Footer from '../components/footer/footer';
 import NavBar from '../components/nav-bar/nav-bar';
 
-
-
-
 /* ===========================
    Helpers & Types
 =========================== */
@@ -60,10 +57,62 @@ type Design = {
 };
 
 /* ===========================
+   T-shirt composite constants
+   (Adjust widthPct/topPct to fine-tune placement)
+=========================== */
+
+const TSHIRT_IMAGE_URL = '/assets/images/placeholder-tshirt.jpg';
+const CHEST_BOX = {
+  widthPct: 0.42,   // square width as % of tee width
+  topPct: 0.26,     // distance from top as % of tee height
+  centerXPct: 0.5,  // center horizontally
+};
+
+/** Compose exported design zone PNG onto the T-shirt base image and return a data URL */
+async function composeDesignOnTee(zonePngUrl: string): Promise<string> {
+  // Load tee base (ensure this file exists in /public/assets/images/)
+  const tee = await fabric.Image.fromURL(TSHIRT_IMAGE_URL, { crossOrigin: 'anonymous' });
+
+  // Default dimensions if metadata missing
+  const teeW = tee.width || 800;
+  const teeH = tee.height || Math.round(teeW * 4 / 3);
+
+  // Offscreen stage
+  const stageEl = document.createElement('canvas');
+  const stage = new fabric.Canvas(stageEl);
+  stage.setDimensions({ width: teeW, height: teeH });
+
+  tee.set({ left: 0, top: 0, selectable: false, evented: false });
+  stage.add(tee);
+
+  // Load the design zone (the square you exported from the editor)
+  const zone = await fabric.Image.fromURL(zonePngUrl, { crossOrigin: 'anonymous' });
+  const chestW = teeW * CHEST_BOX.widthPct;
+  const chestH = chestW; // square
+  const left = teeW * CHEST_BOX.centerXPct - chestW / 2;
+  const top  = teeH * CHEST_BOX.topPct;
+
+  const scaleX = chestW / (zone.width || 1);
+  const scaleY = chestH / (zone.height || 1);
+
+  zone.set({ left, top, scaleX, scaleY, selectable: false, evented: false });
+  stage.add(zone);
+  stage.renderAll();
+
+  const out = stage.toDataURL({
+    format: 'png',
+    multiplier: 1,            // use 2–3 if you want higher-res output
+    enableRetinaScaling: true
+  });
+  stage.dispose();
+  return out;
+}
+
+/* ===========================
    Component
 =========================== */
 
-const CustomizationPage: React.FC = () => {
+const CustomizationPage = () => {
   // base width and height of the internal canvas coordinate system
   const BASE_W = 200;
   const BASE_H = 200;
@@ -168,7 +217,7 @@ const CustomizationPage: React.FC = () => {
       canvas.setActiveObject(img);
       canvas.requestRenderAll();
 
-      userImagesRef.current.push({ node: img, src: url });    
+      userImagesRef.current.push({ node: img, src: url });
       if (fileInputRef.current) fileInputRef.current.value = '';
     };
   };
@@ -181,7 +230,7 @@ const CustomizationPage: React.FC = () => {
     if (!img) return;
 
     canvas.remove(img.node);
-    img.node.dispose?.(); 
+    img.node.dispose?.();
     canvas.requestRenderAll();
 
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -278,11 +327,15 @@ const CustomizationPage: React.FC = () => {
     const canvas = fRef.current;
     if (!canvas) return;
 
-    const designUrl = canvas.toDataURL({
+    // 1) Export the square design zone (high-res)
+    const zonePng = canvas.toDataURL({
       format: 'png',
       multiplier: 3,
       enableRetinaScaling: true,
     });
+
+    // 2) Composite onto T-shirt base
+    const designUrl = await composeDesignOnTee(zonePng);
 
     const imageUrls = collectImageUrls();
     const texts = collectTexts();
@@ -295,10 +348,10 @@ const CustomizationPage: React.FC = () => {
           Authorization: `Bearer ${getToken()}`,
         },
         body: JSON.stringify({
-          designUrl,
+          designUrl,     // ⬅️ full T-shirt image
           imageUrls,
           texts,
-          productName: 'T-Shirt', // change if you track actual product
+          productName: 'T-Shirt',
         }),
       });
       if (!res.ok) {
@@ -324,14 +377,17 @@ const CustomizationPage: React.FC = () => {
     }
   }
 
-  function previewDesign() {
+  async function previewDesign() {
     const canvas = fRef.current;
     if (!canvas) return;
-    const url = canvas.toDataURL({ format: 'png', multiplier: 3, enableRetinaScaling: true });
+
+    const zonePng = canvas.toDataURL({ format: 'png', multiplier: 3, enableRetinaScaling: true });
+    const composite = await composeDesignOnTee(zonePng);
+
     const win = window.open('', '_blank');
     if (win) {
-      win.document.write(`<title>Design Preview</title>`);
-      win.document.write(`<img src="${url}" style="display:block;max-width:100%;height:auto;" />`);
+      win.document.write('<title>Design Preview</title>');
+      win.document.write(`<img src="${composite}" style="display:block;max-width:100%;height:auto;" />`);
       win.document.close();
     }
   }
@@ -577,7 +633,12 @@ const CustomizationPage: React.FC = () => {
                         </div>
 
                         <div className="mt-1 sm:mt-2 flex sm:justify-end gap-3">
-                          <Buttons context="DELETE DESIGN" icon={X} combo="redTransparent" onClick={() => deleteDesign(d._id)} />
+                          <Buttons
+                            context="DELETE DESIGN"
+                            icon={X}
+                            combo="redTransparent"
+                            onClick={() => deleteDesign(d._id)}
+                          />
                           <Buttons context="ADD TO CART" icon={ShoppingCart} />
                         </div>
                       </div>
