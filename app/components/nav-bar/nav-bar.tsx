@@ -65,7 +65,10 @@ const NavBar = () => {
             </p>
 
             <div className='flex relative flex-shrink-0 w-fit h-fit cursor-pointer gap-5'>
-              <p className={` text-dark-green font-bold ${openTop ? 'flex' : 'hidden'}`}>Cart page</p>
+              <a className={` text-dark-green font-bold ${openTop ? 'flex' : 'hidden'}`}
+               href='/cart' aria-label='Go to'>
+                Cart page
+              </a>
               <Image src='/assets/Shopping_cart.svg' alt='Cart-Icon' width={32} height={25} className='max-md:w-6'/>
               <span className="absolute -top-3 right-3.5 w-5 h-5 flex items-center justify-center rounded-full
                                bg-light-green text-white text-sm font-bold max-md:text-xs
