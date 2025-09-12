@@ -7,6 +7,7 @@ import NavBar from "../components/nav-bar/nav-bar";
 import Footer from "../components/footer/footer";
 import toast from "react-hot-toast";
 
+
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 
@@ -19,6 +20,7 @@ function getErrorMessage(err: unknown): string {
 }
 
 const Register = () => {
+
   const [fName, setFirstName] = useState("");
   const [lName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -37,6 +39,7 @@ const Register = () => {
   const passwordValid = password.length >= 10;
   const canSubmit =
     !!fName && !!lName && !!email && passwordValid && confirmValid;
+
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,9 +69,11 @@ const Register = () => {
 
       const data: { token?: string; user?: unknown } = await res.json();
 
+
       if (data.token) {
         localStorage.setItem("access_token", data.token);
       }
+
 
       toast.success("Account created successfully.");
     } catch (err: unknown) {
@@ -150,6 +155,7 @@ const Register = () => {
 
               <div>
                 <label className="block text-sm font-medium text-neutral-700">Password</label>
+
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
@@ -171,10 +177,12 @@ const Register = () => {
                     Password must be at least 10 characters.
                   </p>
                 )}
+
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-neutral-700">Confirm password</label>
+
                 <div className="relative">
                   <input
                     type={showConfirm ? "text" : "password"}
@@ -193,6 +201,7 @@ const Register = () => {
                     {showConfirm ? "Hide" : "Show"}
                   </button>
                 </div>
+
                 {!confirmValid && confirm.length > 0 && (
                   <p className="text-xs text-red-500 mt-1">Passwords do not match.</p>
                 )}

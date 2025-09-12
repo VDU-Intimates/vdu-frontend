@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import NavBar from "../components/nav-bar/nav-bar";
 import Footer from "../components/footer/footer";
+import toast from "react-hot-toast";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 
@@ -40,12 +41,14 @@ const Login = () => {
         throw new Error(data?.message || "Login failed");
       }
 
+
       const data: { token?: string; user?: unknown } = await res.json();
 
       // // Store JWT (optional: prefer httpOnly cookie on the server for production)
       if (data.token) localStorage.setItem("access_token", data.token);
 
-      setMsg("Signed in successfully.");
+
+      toast.success("Signed in successfully.");
       // router.push("/") // optional redirect
     } catch (err: unknown) {
       setMsg(getErrorMessage(err) || "Login failed.");
