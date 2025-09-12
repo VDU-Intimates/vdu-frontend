@@ -7,6 +7,7 @@ const nextConfig = {
       "example.com",     // <-- allow external domain
       "cdn.myshop.com",  // <-- add all other image sources you use
       "localhost",       // <-- if you serve images from backend
+      "images.unsplash.com"
     ],
 
   },

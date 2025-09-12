@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import {
   Star,
@@ -29,6 +29,16 @@ import Buttons from "../components/common-components/button";
 import TshirtSvg from "../components/tshirt-svg/tshirt-svg";
 
 type Img = { src: string; alt: string };
+type ApiUser = {
+  userId: string;
+  fName: string;
+  lName: string;
+  email: string;
+  address?: string | null;
+  contact?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
 
 
 const IMAGES: Img[] = [
@@ -48,11 +58,47 @@ const COLORS = [
 
 const SIZES = ["Small", "Medium", "Large", "Extra Large", "XXL"];
 
+function getToken(): string {
+  try {
+    const raw = localStorage.getItem("access_token");
+    if (!raw) return "";
+    const t = raw.trim();
+    return t && t !== "null" && t !== "undefined" ? t : "";
+  } catch {
+    return "";
+  }
+}
+const API_BASE = "http://localhost:5000";
 const ProductDetails = () => {
   const [activeIdx, setActiveIdx] = useState(0);
   const [color, setColor] = useState(COLORS[0].hex);
   const [size, setSize] = useState(SIZES[0]);
+  const [currentUser, setCurrentUser] = useState<ApiUser | null>(null);
 
+  useEffect (()=>{
+    const loadMe = async () => {
+      const token = getToken();
+      if (!token) {
+         setCurrentUser(null);
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) {
+          setCurrentUser(null);
+          return;
+        }
+        const data: { user: ApiUser } = await res.json();
+        setCurrentUser(data.user);
+      } catch {
+        setCurrentUser(null);
+      }
+    };
+    loadMe();
+  })
+  
   const go = (dir: -1 | 1) =>
     setActiveIdx((i) => (i + dir + IMAGES.length) % IMAGES.length);
 
@@ -314,7 +360,11 @@ const ProductDetails = () => {
                 </span>
               </span>
             <div className="mt-6 flex flex-wrap items-center gap-3">
+              {
+                currentUser ? <Buttons context="CUSTOMIZE" icon={Brush}/> :
                 <Buttons context="CUSTOMIZE" icon={Brush} disabled/>
+              }
+                
               
               <Buttons context="ADD TO CART" icon={ShoppingCart} />
             </div>

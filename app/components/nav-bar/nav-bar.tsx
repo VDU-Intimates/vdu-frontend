@@ -4,13 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import SearchBar from "../common-components/search-bar";
 
-// ---- Config ----
+// API base for your backend
 const API_BASE = "http://localhost:5000";
 
-// ---- Types ----
+// Types that match /api/auth/me
 type ApiUser = {
   userId: string;
   fName: string;
@@ -24,14 +24,16 @@ type ApiUser = {
 
 function getToken(): string {
   try {
-    return localStorage.getItem("access_token") || "";
+    const raw = localStorage.getItem("access_token");
+    if (!raw) return "";
+    const t = raw.trim();
+    return t && t !== "null" && t !== "undefined" ? t : "";
   } catch {
     return "";
   }
 }
 
 const NavBar = () => {
-  const router = useRouter();
   const pathname = usePathname();
 
   const newArrivalItems = ["Men", "Women", "Kids"];
@@ -47,11 +49,10 @@ const NavBar = () => {
   const [dropdownD, setDropdownD] = useState(false);
 
   // Auth state
-  const [token, setToken] = useState<string>("");            // <-- track token
   const [currentUser, setCurrentUser] = useState<ApiUser | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  // Account modal state
+  // Account modal state (kept)
   const [accountOpen, setAccountOpen] = useState(false);
   const [fName, setFName] = useState("");
   const [lName, setLName] = useState("");
@@ -70,76 +71,49 @@ const NavBar = () => {
     }
   }, [openBottom]);
 
-  // Keep token in sync with localStorage across:
-  // - initial mount
-  // - route changes (after navigating from /login)
-  // - tab focus (user may log in on another tab)
-  // - storage changes (other tabs)
-  // - custom "auth:updated" event (dispatch this after setting token on login)
+  // --- KEY PART: (Re)load user whenever:
+  //  - the component mounts
+  //  - the route changes (e.g., after navigating away from /Login)
+  //  - a custom "auth:updated" event is dispatched (immediately after login)
   useEffect(() => {
-    const read = () => setToken(getToken());
-    read(); // initial + on pathname change
-
-    const onFocus = () => setToken(getToken());
-    const onStorage = (e: StorageEvent) => {
-      if (!e.key || e.key === "access_token") setToken(getToken());
-    };
-    const onAuthUpdated = () => setToken(getToken());
-
-    window.addEventListener("focus", onFocus);
-    window.addEventListener("storage", onStorage);
-    window.addEventListener("auth:updated", onAuthUpdated as EventListener);
-
-    return () => {
-      window.removeEventListener("focus", onFocus);
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener("auth:updated", onAuthUpdated as EventListener);
-    };
-    // re-check token whenever route changes
-  }, [pathname]);
-
-  // Fetch /auth/me whenever token changes
-  useEffect(() => {
-    let isMounted = true;
+    let alive = true;
 
     const loadMe = async () => {
+      const token = getToken();
       if (!token) {
-        if (isMounted) setCurrentUser(null);
+        if (alive) setCurrentUser(null);
         return;
       }
       try {
         const res = await fetch(`${API_BASE}/api/auth/me`, {
-          method: "GET",
-          headers: { Authorization: `Bearer ${token}` },
-          credentials: "include",
+          headers: { Authorization: `Bearer ${token}` }
         });
         if (!res.ok) {
-          if (isMounted) setCurrentUser(null);
+          if (alive) setCurrentUser(null);
           return;
         }
         const data: { user: ApiUser } = await res.json();
-        if (isMounted) setCurrentUser(data.user);
+        if (alive) setCurrentUser(data.user);
       } catch {
-        if (isMounted) setCurrentUser(null);
+        if (alive) setCurrentUser(null);
       }
     };
 
     loadMe();
+
+    const onAuthUpdated = () => loadMe(); // call this after login sets the token
+    window.addEventListener("auth:updated", onAuthUpdated as EventListener);
+
     return () => {
-      isMounted = false;
+      alive = false;
+      window.removeEventListener("auth:updated", onAuthUpdated as EventListener);
     };
-  }, [token]);
+  }, [pathname]);
 
   const displayFirstName =
-    currentUser?.fName ||
-    (currentUser?.email ? currentUser.email.split("@")[0] : undefined);
+    currentUser?.fName || (currentUser?.email ? currentUser.email.split("@")[0] : undefined);
 
-  const avatarInitial = (
-    currentUser?.fName?.[0] ||
-    currentUser?.lName?.[0] ||
-    currentUser?.email?.[0] ||
-    "U"
-  ).toUpperCase();
+
 
   const openAccountManager = () => {
     if (!currentUser) return;
@@ -153,6 +127,7 @@ const NavBar = () => {
 
   const handleAccountSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    const token = getToken();
     if (!currentUser || !token) return;
 
     setSaving(true);
@@ -163,7 +138,6 @@ const NavBar = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        credentials: "include",
         body: JSON.stringify({
           fName: fName.trim(),
           lName: lName.trim(),
@@ -173,7 +147,6 @@ const NavBar = () => {
       });
 
       if (!res.ok) {
-        console.error("Failed to update profile");
         setSaving(false);
         return;
       }
@@ -181,26 +154,18 @@ const NavBar = () => {
       const data: { user: ApiUser } = await res.json();
       setCurrentUser(data.user);
       setAccountOpen(false);
-    } catch (err) {
-      console.error(err);
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleDeleteAccount = () => {
-    // Optional: call DELETE endpoint if you add one
-    setAccountOpen(false);
   };
 
   const handleSignOut = () => {
     try {
       localStorage.removeItem("access_token");
     } catch {}
-    setToken("");                 // <-- clear token state
     setCurrentUser(null);
     setUserMenuOpen(false);
-    router.refresh();             // <-- ensure re-render of layouts using server data
+    // no router.refresh or extra listeners needed
   };
 
   return (
@@ -278,7 +243,55 @@ const NavBar = () => {
             </div>
 
             {/* Auth section */}
-            {!currentUser ? (
+            {currentUser ? (
+              <div className="relative mr-3">
+              <button
+                onClick={() => setUserMenuOpen((s) => !s)}
+                className="inline-flex items-center gap-2 rounded-xl bg-[#2f432a] px-3 py-1.5 text-[#eadfcd] text-sm font-semibold hover:opacity-90"
+              >
+                <span className="inline-grid place-items-center h-7 w-7 rounded-full bg-[#F3C86A] text-[#2f432a] font-bold">
+                  {(currentUser.fName || currentUser.email)[0].toUpperCase()}
+                </span>
+                <span className="hidden sm:block">
+                  {`${displayFirstName || ""}`.trim().toUpperCase()}
+                </span>
+              </button>
+
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-2 w-56 rounded-xl border z-[1000] border-black/5 bg-white shadow-lg p-1 text-sm">
+                  <Link
+                    href="/orders"
+                    className="block rounded-lg px-3 py-2 hover:bg-neutral-50"
+                  >
+                    Order history
+                  </Link>
+                  <Link
+                    href="/track"
+                    className="block rounded-lg px-3 py-2 hover:bg-neutral-50"
+                  >
+                    Track orders
+                  </Link>
+                  <button
+                    onClick={openAccountManager}
+                    className="w-full text-left rounded-lg px-3 py-2 hover:bg-neutral-50"
+                  >
+                    Account management
+                  </button>
+                  <div className="my-1 border-t border-neutral-200" />
+                  <button
+                    onClick={() => {
+                      handleSignOut();
+                      // no event needed to leave things simple
+                    }}
+                    className="w-full text-left rounded-lg px-3 py-2 text-red-600 hover:bg-red-50"
+                  >
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+              
+            ) :  (
               <Link href="/Login">
                 <div className="flex items-center cursor-pointer gap-3 mr-3">
                   <p className="text-dark-green font-bold underline text-sm sm:text-sm md:text-xs lg:text-sm xl:text-base">
@@ -292,51 +305,7 @@ const NavBar = () => {
                   />
                 </div>
               </Link>
-            ) : (
-              <div className="relative mr-3">
-                <button
-                  onClick={() => setUserMenuOpen((s) => !s)}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#2f432a] px-3 py-1.5 text-[#eadfcd] text-sm font-semibold hover:opacity-90"
-                >
-                  <span className="inline-grid place-items-center h-7 w-7 rounded-full bg-[#F3C86A] text-[#2f432a] font-bold">
-                    {avatarInitial}
-                  </span>
-                  <span className="hidden sm:block">
-                    {`${displayFirstName || ""} ${currentUser.lName || ""}`.trim()}
-                  </span>
-                </button>
-
-                {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 rounded-xl border z-[1000] border-black/5 bg-white shadow-lg p-1 text-sm">
-                    <Link
-                      href="/orders"
-                      className="block rounded-lg px-3 py-2 hover:bg-neutral-50"
-                    >
-                      Order history
-                    </Link>
-                    <Link
-                      href="/track"
-                      className="block rounded-lg px-3 py-2 hover:bg-neutral-50"
-                    >
-                      Track orders
-                    </Link>
-                    <button
-                      onClick={openAccountManager}
-                      className="w-full text-left rounded-lg px-3 py-2 hover:bg-neutral-50"
-                    >
-                      Account management
-                    </button>
-                    <div className="my-1 border-t border-neutral-200" />
-                    <button
-                      onClick={handleSignOut}
-                      className="w-full text-left rounded-lg px-3 py-2 text-red-600 hover:bg-red-50"
-                    >
-                      Sign out
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+            ) }
           </div>
         </div>
 
@@ -650,7 +619,7 @@ const NavBar = () => {
             <div className="mt-4 border-t border-neutral-200 pt-4">
               <button
                 type="button"
-                onClick={handleDeleteAccount}
+                onClick={() => setAccountOpen(false)}
                 className="w-full rounded-xl border border-red-300 text-red-600 py-2 font-semibold hover:bg-red-50"
               >
                 Delete account

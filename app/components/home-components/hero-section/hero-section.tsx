@@ -39,7 +39,7 @@ const HeroSection = () => {
             CLOTHES
           </h2>
           <p className="text-base md:text-lg font-semibold">Create Your Own STYLE</p>
-          <Link href="/Customization"><PrimaryButton context = "Start Customizing" icon={Brush}/></Link>
+          <Link href="/AllProducts"><PrimaryButton context = "Start Customizing" icon={Brush}/></Link>
         </div>
 
         {/* Right media panel */}

@@ -8,6 +8,7 @@ import Footer from "../components/footer/footer";
 import toast from "react-hot-toast";
 
 
+
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 
@@ -74,8 +75,8 @@ const Register = () => {
         localStorage.setItem("access_token", data.token);
       }
 
-
       toast.success("Account created successfully.");
+      window.location.assign("/Login"); 
     } catch (err: unknown) {
       toast.error(getErrorMessage(err));
     } finally {

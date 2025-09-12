@@ -3,6 +3,7 @@ import { CreditCard, ShoppingCart, Star } from "lucide-react";
 import Image from "next/image";
 import React from "react";
 import Buttons from "../common-components/button";
+import Link from "next/link";
 
 export type CardProduct = {
   id: string;
@@ -50,7 +51,7 @@ const ProductCard = ({ p }: { p: CardProduct }) => {
 
         <div className="mt-3 flex items-center justify-between gap-3">
           <Buttons context="Add to Cart" icon={ShoppingCart} combo="beigeGreen" className="w-full sm:w-auto px-4 py-2 text-sm font-medium" />
-          <Buttons context="Buy Now" icon={CreditCard} className="w-full sm:w-auto px-4 py-2 text-sm font-medium" />
+          <Link href='../ProductDetail'><Buttons context="Buy Now" icon={CreditCard} className="w-full sm:w-auto px-4 py-2 text-sm font-medium" /></Link>
         </div>
       </div>
     </div>

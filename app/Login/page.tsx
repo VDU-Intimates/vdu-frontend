@@ -7,6 +7,7 @@ import NavBar from "../components/nav-bar/nav-bar";
 import Footer from "../components/footer/footer";
 import toast from "react-hot-toast";
 
+
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 
 function getErrorMessage(err: unknown): string {
@@ -18,6 +19,7 @@ function getErrorMessage(err: unknown): string {
 }
 
 const Login = () => {
+  // const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -46,10 +48,11 @@ const Login = () => {
 
       // // Store JWT (optional: prefer httpOnly cookie on the server for production)
       if (data.token) localStorage.setItem("access_token", data.token);
-
+      
 
       toast.success("Signed in successfully.");
       // router.push("/") // optional redirect
+      window.location.assign("/"); 
     } catch (err: unknown) {
       setMsg(getErrorMessage(err) || "Login failed.");
     } finally {
