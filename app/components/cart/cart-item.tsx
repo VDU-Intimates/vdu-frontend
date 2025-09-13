@@ -1,97 +1,60 @@
-"use client";
+import React from 'react';
+import { Trash2 } from 'lucide-react';
+import NumberStepper from './quantity-selector';
 
-import { FC, useState } from "react";
-import Image from "next/image";
-import { Trash2, ChevronUp, ChevronDown } from "lucide-react";
-
-type CartItemProps = {
-  name: string;
-  price: number;
-  imageUrl: string;
-  quantity: number;
-  onIncrease: () => void;
-  onDecrease: () => void;
-  onRemove: () => void;
-  onSetQuantity?: (newQty: number) => void;
-};
-
-const CartItem: FC<CartItemProps> = ({
-  name,
-  price,
-  imageUrl,
-  quantity,
-  onIncrease,
-  onDecrease,
-  onRemove,
-  onSetQuantity,
+const CartItem = ({ 
+    item, 
+    onQuantityChange, 
+    onRemove,
+    currency = "Rs."
 }) => {
-  const [editing, setEditing] = useState(false);
-  const [tempQty, setTempQty] = useState(quantity);
+    const handleQuantityDecrease = () => {
+        if (item.quantity > 1) {
+            onQuantityChange(item.id, item.quantity - 1);
+        } else {
+            onRemove(item.id);
+        }
+    };
 
-  const handleBlur = () => {
-    setEditing(false);
-    if (tempQty > 0 && onSetQuantity) onSetQuantity(tempQty);
-  };
+    const handleQuantityIncrease = () => {
+        onQuantityChange(item.id, item.quantity + 1);
+    };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      (e.target as HTMLInputElement).blur();
-    }
-  };
-
-  return (
-    <div className="flex items-center justify-between rounded-xl p-4 
-    shadow-md bg-white/95 w-[40%]">
-      <div className="flex items-center gap-4">
-        <div className="relative h-16 w-16 overflow-hidden rounded-md border">
-          <Image src={imageUrl} alt={name} fill className="object-cover" />
-        </div>
-        <span className="font-medium">{name}</span>
-      </div>
-
-      <div className="flex items-center gap-6">
-        <div className="flex items-center gap-1">
-          <button
-            onClick={onIncrease}
-            className="rounded-md border p-1 hover:bg-gray-100"
-          >
-            <ChevronUp size={16} />
-          </button>
-
-          {editing ? (
-            <input
-              type="number"
-              min={1}
-              value={tempQty}
-              onChange={(e) => setTempQty(Number(e.target.value))}
-              onBlur={handleBlur}
-              onKeyDown={handleKeyDown}
-              className="w-12 rounded border px-1 text-center text-sm"
-              autoFocus
+    return (
+        <div className="flex items-center gap-4 p-4 bg-white rounded-lg">
+            <img
+                src={item.imageUrl}
+                alt={item.name}
+                className="w-16 h-16 object-cover rounded-md flex-shrink-0"
+                onError={(e) => {
+                    e.target.src = '/assets/placeholder.jpg'; // Fallback image
+                }}
             />
-          ) : (
-            <span
-              className="mx-1 w-5 cursor-pointer text-center"
-              onClick={() => setEditing(true)}
-            >
-              {quantity}
-            </span>
-          )}
+            
+            <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-gray-900 truncate">{item.name}</h3>
+            </div>
 
-          <button
-            onClick={onDecrease}
-            className="rounded-md border p-1 hover:bg-gray-100"
-          >
-            <ChevronDown size={16} />
-          </button>
+            <div className="flex items-center gap-4">
+                {/* Quantity Controls */}
+                <NumberStepper />
+
+                {/* Price */}
+                <div className="text-right min-w-[80px]">
+                    <span className="font-medium">{currency}{item.price}</span>
+                </div>
+
+                {/* Remove Button */}
+                <button
+                    onClick={() => onRemove(item.id)}
+                    className="text-red-500 hover:text-red-700 p-1 transition-colors"
+                    aria-label={`Remove ${item.name} from cart`}
+                >
+                    <Trash2 className="w-4 h-4" />
+                </button>
+            </div>
         </div>
-        <span className="font-medium">Rs.{price}</span>
-        <button onClick={onRemove} className="text-red-500 hover:text-red-600">
-          <Trash2 size={20} />
-        </button>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default CartItem;
