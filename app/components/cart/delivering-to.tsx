@@ -3,7 +3,7 @@ import React from 'react';
 const DeliveringTo = ({ 
     deliveryInfo, 
     onInputChange, 
-    onClear, 
+    onClear,  // This matches what's being passed from parent
     onOrderConfirm,
     isLoading = false,
     termsText = 'By clicking "Order Confirmed" I agree to the companies terms of service'
@@ -60,7 +60,7 @@ const DeliveringTo = ({
 
                 <div className="flex gap-4 mt-6">
                     <button
-                        onClick={onClear}
+                        onClick={onClear}  // FIXED: Use the correct prop name
                         className="flex items-center justify-center px-6 py-3 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
                         disabled={isLoading}
                     >

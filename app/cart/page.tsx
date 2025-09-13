@@ -125,8 +125,8 @@ const CartPage = () => {
         }
     };
 
-    const handleClear = () => {
-        setCartItems([]);
+    // FIXED: Only clear delivery info, not cart items
+    const handleClearDeliveryInfo = () => {
         setDeliveryInfo({
             fullName: '',
             address: '',
@@ -189,11 +189,11 @@ const CartPage = () => {
                         currency="Rs."
                     />
 
-                    {/* Delivering To */}
+                    {/* Delivering To - FIXED: Use onClear prop name to match component */}
                     <DeliveringTo
                         deliveryInfo={deliveryInfo}
                         onInputChange={handleDeliveryInputChange}
-                        onClear={handleClear}
+                        onClear={handleClearDeliveryInfo}
                         onOrderConfirm={handleOrderConfirm}
                         isLoading={isLoading}
                     />
