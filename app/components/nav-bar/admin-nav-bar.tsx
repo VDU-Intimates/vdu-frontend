@@ -1,16 +1,15 @@
 'use client';
 
-import React, { useState } from "react";
+import React from "react";
+import Link from "next/link";
 import { Home, Package, ShoppingCart, Users, LogOut, Search } from "lucide-react";
 
-const DashboardLayout = () => {
-  const [activePage, setActivePage] = useState("Dashboard");
-
+const AdminNavBar = () => {
   const menuItems = [
-    { name: "Dashboard", icon: <Home className="h-5 w-5" />, path: "" }, // 👉 add path
-    { name: "Inventory", icon: <Package className="h-5 w-5" />, path: "" },
-    { name: "Orders", icon: <ShoppingCart className="h-5 w-5" />, path: "" },
-    { name: "Users", icon: <Users className="h-5 w-5" />, path: "/AdminPanelUser" },
+    { name: "Dashboard", icon: <Home className="h-5 w-5" />, path: "/dashboard" },
+    { name: "Inventory", icon: <Package className="h-5 w-5" />, path: "/inventory" },
+    { name: "Orders", icon: <ShoppingCart className="h-5 w-5" />, path: "/orders" },
+    { name: "Users", icon: <Users className="h-5 w-5" />, path: "/users" },
   ];
 
   return (
@@ -31,27 +30,28 @@ const DashboardLayout = () => {
 
           {/* Menu */}
           <nav className="space-y-2">
-            {menuItems.map((item) => (
-              <a
-                key={item.name}
-                href={item.path} // 👉 you can insert your path here
-                className={`flex items-center space-x-2 px-3 py-2 w-full rounded-md transition ${
-                  activePage === item.name
-                    ? "bg-[#f4e7cd] font-medium"
-                    : "hover:bg-[#f4e7cd]"
-                }`}
-                onClick={() => setActivePage(item.name)}
-              >
-                {item.icon}
-                <span>{item.name}</span>
-              </a>
+            {menuItems.map((item, index) => (
+              <Link key={`${item.name}-${index}`} href={item.path}>
+                <div
+                  className={`flex items-center space-x-2 px-3 py-2 w-full rounded-md transition hover:bg-[#f4e7cd]`}
+                >
+                  {item.icon}
+                  <span>{item.name}</span>
+                </div>
+              </Link>
             ))}
           </nav>
         </div>
 
         {/* Logout */}
         <div>
-          <button className="flex items-center space-x-2 text-red-600 px-3 py-2 rounded-md hover:bg-red-100 transition">
+          <button 
+            onClick={() => {
+              localStorage.removeItem("token");
+              window.location.href = "/login"; // or use router.push("/login")
+            }}
+            className="flex items-center space-x-2 text-red-600 px-3 py-2 rounded-md hover:bg-red-100 transition"
+          >
             <LogOut className="h-5 w-5" />
             <span>LOGOUT</span>
           </button>
@@ -63,7 +63,7 @@ const DashboardLayout = () => {
         className="h-16 bg-white shadow flex items-center px-6 justify-between fixed top-0 right-0 z-50"
         style={{ width: "calc(100% - 16rem)", marginLeft: "16rem" }}
       >
-        <h1 className="text-xl font-semibold">{activePage}</h1>
+        <h1 className="text-xl font-semibold">Admin Panel</h1>
 
         <div className="flex items-center w-full max-w-xs bg-gray-100 rounded-lg px-3 py-2">
           <Search className="h-5 w-5 text-gray-500" />
@@ -78,4 +78,4 @@ const DashboardLayout = () => {
   );
 };
 
-export default DashboardLayout;
+export default AdminNavBar;
