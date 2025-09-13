@@ -43,7 +43,7 @@ type UIProduct = {
   productId?: string; // productId from backend
   name: string; // productName
   description: string;
-  category: "T-Shirt" | "MEN" | "WOMEN"; // UI categories
+  category: "T-Shirt" | "Intimate"; // UI categories
   price: number;
   stock: number; // UI-only
   image: string; // photoUrl (can be base64 or URL)
@@ -74,7 +74,7 @@ function apiToUI(p: ApiProduct): UIProduct {
     productId: p.productId,
     name: p.productName,
     description: p.description,
-    category: p.category === "Intimate" ? "MEN" : "T-Shirt",
+    category: p.category === "Intimate" ? "Intimate" : "T-Shirt",
     price: p.price,
     stock: 0,
     image: p.photoUrl,
@@ -423,7 +423,7 @@ function AddNewProduct({ onCreated }: { onCreated: (p: UIProduct) => Promise<voi
 
         <label className="block text-sm font-medium mb-2">Category</label>
         <div className="flex gap-3 mb-6">
-          {(["T-Shirt", "MEN", "WOMEN"] as const).map((c) => (
+          {(["T-Shirt","Intimate"] as const).map((c) => (
             <button
               key={c}
               className={[
@@ -432,7 +432,7 @@ function AddNewProduct({ onCreated }: { onCreated: (p: UIProduct) => Promise<voi
               ].join(" ")}
               onClick={() => setForm((f) => ({ ...f, category: c }))}
             >
-              {c === "MEN" ? "MEN's underwear" : c === "WOMEN" ? "WOMAN's Underwear" : "T-Shirt"}
+              {c === "Intimate" ? "Intimate" : "T-Shirt"}
             </button>
           ))}
         </div>
@@ -583,7 +583,7 @@ function AddNewProduct({ onCreated }: { onCreated: (p: UIProduct) => Promise<voi
           </div>
           <div className="grid grid-cols-[200px_1fr]">
             <dt className="font-semibold">Category</dt>
-            <dd>{form.category === "T-Shirt" ? "T-Shirt" : `${form.category}'s underwear`}</dd>
+            <dd>{form.category === "T-Shirt" ? "T-Shirt" : `${form.category}`}</dd>
           </div>
           <div className="grid grid-cols-[200px_1fr]">
             <dt className="font-semibold">Colors</dt>
@@ -723,7 +723,7 @@ function UpdateProduct({
 
       <label className="block text-sm font-medium mb-2">Category</label>
       <div className="flex gap-3 mb-4">
-        {(["T-Shirt", "MEN", "WOMEN"] as const).map((c) => (
+        {(["T-Shirt", "Intimate"] as const).map((c) => (
           <button
             key={c}
             className={[
@@ -732,7 +732,7 @@ function UpdateProduct({
             ].join(" ")}
             onClick={() => setSelected({ ...selected, category: c })}
           >
-            {c === "MEN" ? "MEN's underwear" : c === "WOMEN" ? "WOMAN's Underwear" : "T-Shirt"}
+            {c === "Intimate" ? "Intimate" : "T-Shirt"}
           </button>
         ))}
       </div>

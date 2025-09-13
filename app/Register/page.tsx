@@ -76,7 +76,7 @@ const Register = () => {
       }
 
       toast.success("Account created successfully.");
-      window.location.assign("/Login"); 
+      window.location.assign("/"); 
     } catch (err: unknown) {
       toast.error(getErrorMessage(err));
     } finally {
