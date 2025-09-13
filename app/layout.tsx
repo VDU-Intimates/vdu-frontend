@@ -24,7 +24,7 @@ export default function RootLayout({
       <body
         className={`${raleway.className} antialiased overflow-x-hidden`}
       >
-        <NavBar />
+        
         {children}
       </body>
     </html>
