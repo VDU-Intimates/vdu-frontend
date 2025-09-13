@@ -1,16 +1,18 @@
 // app/dashboard/page.tsx  (Next.js 13+ with App Router)
 import React from "react";
 import { Search, Package, Box, AlertTriangle, ClipboardList, Users } from "lucide-react";
+import Image from "next/image";
 
 const AdminDashboard = () => {
   return (
     <div className="flex min-h-screen bg-[#f7f5ef]">
       {/* Sidebar */}
       <aside className="w-64 bg-[#d8c39d] p-6 flex flex-col items-center">
-        <img
-          src="https://via.placeholder.com/150"
+        <Image
+          src="/assets/images/team.png"
           alt="Profile"
           className="w-28 h-28 rounded-full object-cover mb-4"
+          width={112} height={112}
         />
         <h2 className="font-semibold text-lg">Sathees Malavan</h2>
         <p className="text-sm text-gray-700">satheesmalavan100@gmail.com</p>
