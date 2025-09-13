@@ -1,3 +1,4 @@
+
 "use client";
 import React from "react";
 import type { LucideIcon } from "lucide-react";
@@ -94,6 +95,7 @@ const Buttons = ({
   return (
     <button
       onClick={handleClick}
+
       disabled={disabled}
       className={[
         "w-fit h-[40px] px-3 border-2 font-bold rounded-2xl transition-all duration-300 shadow-md",
@@ -102,6 +104,7 @@ const Buttons = ({
         disabled
           ? "opacity-50 cursor-not-allowed pointer-events-none hover:shadow-none"
           : `cursor-pointer ${hover}`,
+
         className,
       ].join(" ")}
     >
@@ -110,5 +113,6 @@ const Buttons = ({
     </button>
   );
 };
+
 
 export default Buttons;
