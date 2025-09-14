@@ -55,21 +55,23 @@ const Login = () => {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.message || "Login failed");
       }
+      
 
 
       const data: { token?: string; user?: ApiUser } = await res.json();
 
       // // Store JWT (optional: prefer httpOnly cookie on the server for production)
       if (data.token) localStorage.setItem("access_token", data.token);
-      
+    
 
       toast.success("Signed in successfully.");
-      // router.push("/") // optional redirect
+
       if (data.user?.role === "admin") {
         window.location.assign("/Dashboard");
       } else {
         window.location.assign("/");
       }
+
     } catch (err: unknown) {
       setMsg(getErrorMessage(err) || "Login failed.");
     } finally {
