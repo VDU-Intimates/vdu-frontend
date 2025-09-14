@@ -1,6 +1,7 @@
 import React from 'react';
 import { Trash2 } from 'lucide-react';
 import NumberStepper from './quantity-selector';
+import Image from 'next/image';
 
 const CartItem = ({ 
     item, 
@@ -8,26 +9,17 @@ const CartItem = ({
     onRemove,
     currency = "Rs."
 }) => {
-    const handleQuantityDecrease = () => {
-        if (item.quantity > 1) {
-            onQuantityChange(item.id, item.quantity - 1);
-        } else {
-            onRemove(item.id);
-        }
-    };
-
-    const handleQuantityIncrease = () => {
-        onQuantityChange(item.id, item.quantity + 1);
-    };
-
+    
     return (
         <div className="flex items-center gap-4 p-4 bg-white rounded-lg">
-            <img
+            <Image
                 src={item.imageUrl}
                 alt={item.name}
-                className="w-16 h-16 object-cover rounded-md flex-shrink-0"
+                width={64}
+                height={64}
+                className="object-cover rounded-md flex-shrink-0"
                 onError={(e) => {
-                    e.target.src = '/assets/placeholder.jpg'; // Fallback image
+                    e.target.src = '/assets/placeholder.jpg';
                 }}
             />
             

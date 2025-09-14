@@ -7,50 +7,7 @@ import DeliveringTo from '../components/cart/delivering-to';
 
 const CartPage = () => {
     // Mock data - will be replaced with API data
-    const [cartItems, setCartItems] = useState([
-        {
-            id: 1,
-            imageUrl: '/assets/shirt1.jpg',
-            name: 'Heart unisex T-shirt',
-            price: 1500,
-            quantity: 1
-        },
-        {
-            id: 2,
-            imageUrl: '/assets/shirt2.jpg',
-            name: 'Believe Printed Oversized Baggy T-shirt',
-            price: 2300,
-            quantity: 1
-        },
-        {
-            id: 3,
-            imageUrl: '/assets/shirt3.jpg',
-            name: 'Fit short sleeve',
-            price: 2300,
-            quantity: 1
-        },
-        {
-            id: 4,
-            imageUrl: '/assets/shirt4.jpg',
-            name: 'Women Sport Intimates',
-            price: 2300,
-            quantity: 1
-        },
-        {
-            id: 5,
-            imageUrl: '/assets/shirt5.jpg',
-            name: 'Men Unpadded Athletic Underwear',
-            price: 1100,
-            quantity: 1
-        },
-        {
-            id: 6,
-            imageUrl: '/assets/shirt6.jpg',
-            name: 'Yellow & Steel Gray Sport T-shirt',
-            price: 2500,
-            quantity: 1
-        }
-    ]);
+    const [cartItems, setCartItems] = useState([]);
 
     const [isLoading, setIsLoading] = useState(false);
     
@@ -235,48 +192,73 @@ const CartPage = () => {
 
                 <hr className="border-gray-300 mb-6" />
 
-                {/* Shopping Cart Section */}
-                <div className="mb-8">
-                    <h2 className="text-lg font-medium text-gray-900 mb-2">Shopping cart</h2>
-                    <p className="text-sm text-gray-600 mb-6">
-                        You have {cartItems.length} item{cartItems.length !== 1 ? 's' : ''} in your cart
-                    </p>
-
-                    {/* Cart Items */}
-                    <div className="space-y-4 mb-8">
-                        {cartItems.map((item) => (
-                            <CartItem
-                                key={item.id}
-                                item={item}
-                                onQuantityChange={handleQuantityChange}
-                                onRemove={handleRemoveItem}
-                                currency="Rs."
-                            />
-                        ))}
+                {/* Loading state */}
+                {isLoading ? (
+                    <div className="flex justify-center items-center py-16">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                        <span className="ml-2">Loading cart...</span>
                     </div>
-                </div>
+                ) : (
+                    <>
+                        {/* Shopping Cart Section */}
+                        <div className="mb-8">
+                            <h2 className="text-lg font-medium text-gray-900 mb-2">Shopping cart</h2>
+                            <p className="text-sm text-gray-600 mb-6">
+                                You have {cartItems.length} item{cartItems.length !== 1 ? 's' : ''} in your cart
+                            </p>
 
-                {/* Main Content Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Order Summary */}
-                    <OrderSummary
-                        subtotal={subtotal}
-                        discountPercent={discountPercent}
-                        discountAmount={discountAmount}
-                        deliveryFee={deliveryFee}
-                        total={total}
-                        currency="Rs."
-                    />
+                            {/* Empty cart state */}
+                            {cartItems.length === 0 ? (
+                                <div className="text-center py-16 bg-white rounded-lg">
+                                    <p className="text-gray-500 text-lg mb-4">Your cart is empty</p>
+                                    <button
+                                        onClick={handleContinueShopping}
+                                        className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                                    >
+                                        Start Shopping
+                                    </button>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Cart Items */}
+                                    <div className="space-y-4 mb-8">
+                                        {cartItems.map((item) => (
+                                            <CartItem
+                                                key={item.id}
+                                                item={item}
+                                                onQuantityChange={handleQuantityChange}
+                                                onRemove={handleRemoveItem}
+                                                currency="Rs."
+                                            />
+                                        ))}
+                                    </div>
 
-                    {/* Delivering To - FIXED: Use onClear prop name to match component */}
-                    <DeliveringTo
-                        deliveryInfo={deliveryInfo}
-                        onInputChange={handleDeliveryInputChange}
-                        onClear={handleClearDeliveryInfo}
-                        onOrderConfirm={handleOrderConfirm}
-                        isLoading={isLoading}
-                    />
-                </div>
+                                    {/* Main Content Grid - Only show if cart has items */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                        {/* Order Summary */}
+                                        <OrderSummary
+                                            subtotal={subtotal}
+                                            discountPercent={discountPercent}
+                                            discountAmount={discountAmount}
+                                            deliveryFee={deliveryFee}
+                                            total={total}
+                                            currency="Rs."
+                                        />
+
+                                        {/* Delivering To */}
+                                        <DeliveringTo
+                                            deliveryInfo={deliveryInfo}
+                                            onInputChange={handleDeliveryInputChange}
+                                            onClear={handleClearDeliveryInfo}
+                                            onOrderConfirm={handleOrderConfirm}
+                                            isLoading={isLoading}
+                                        />
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );
