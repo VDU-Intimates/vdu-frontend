@@ -1,15 +1,14 @@
+
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
 import {
   Box,
-  ClipboardList,
   PackagePlus,
   PencilLine,
   Trash2,
-  Users,
 } from "lucide-react";
+import AdminNavBar from "@/app/components/nav-bar/admin-nav-bar";
 
 /* =========================
    Config & Helpers
@@ -119,7 +118,7 @@ export default function InventoryPage() {
       try {
         setLoading(true);
         setErr(null);
-        const res = await fetch(`${API_BASE}/api/products/admin`);
+        const res = await fetch(`${API_BASE}/api/admin/products`);
         if (!res.ok) throw new Error(`List failed (${res.status})`);
         const json = await res.json();
         const list: ApiProduct[] = Array.isArray(json) ? json : json.data ?? [];
@@ -135,41 +134,7 @@ export default function InventoryPage() {
   return (
     <div className="flex min-h-screen font-poppins bg-[#f4efe4]">
       {/* Sidebar (fixed) */}
-      <aside className="w-[260px] bg-[#d4bb8c] text-black p-6 flex flex-col">
-        <div className="flex flex-col items-center">
-          <div className="relative w-28 h-28 overflow-hidden rounded-full">
-            <Image
-              src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=400&auto=format&fit=crop"
-              alt="profile"
-              fill
-              className="object-cover"
-            />
-          </div>
-          <h2 className="font-semibold text-lg mt-3">Sathees Malavan</h2>
-          <p className="text-sm text-gray-800">satheesmalaqvan100@gmail.com</p>
-        </div>
-
-        <nav className="mt-8">
-          <ul className="space-y-2">
-            <li className="flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-white/70 cursor-pointer">
-              <ClipboardList size={18} /> DashBoard
-            </li>
-            <li className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white cursor-default">
-              <Box size={18} /> Inventory
-            </li>
-            <li className="flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-white/70 cursor-pointer">
-              <PackagePlus size={18} /> Orders
-            </li>
-            <li className="flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-white/70 cursor-pointer">
-              <Users size={18} /> Users
-            </li>
-          </ul>
-        </nav>
-
-        <button className="mt-auto text-red-700 text-sm font-semibold hover:underline">
-          LOGOUT
-        </button>
-      </aside>
+      <AdminNavBar />
 
       {/* Main */}
       <main className="flex-1 p-8">
@@ -210,7 +175,7 @@ export default function InventoryPage() {
               onCreated={async (ui) => {
                 try {
                   const token = getToken();
-                  const res = await fetch(`${API_BASE}/api/products/admin`, {
+                  const res = await fetch(`${API_BASE}/api/admin/products`, {
                     method: "POST",
                     headers: {
                       "Content-Type": "application/json",
@@ -237,7 +202,7 @@ export default function InventoryPage() {
                   }
                   const token = getToken();
                   const id = ui._id ?? ui.productId!;
-                  const res = await fetch(`${API_BASE}/api/products/admin/${id}`, {
+                  const res = await fetch(`${API_BASE}/api/admin/products/${id}`, {
                     method: "PATCH",
                     headers: {
                       "Content-Type": "application/json",
@@ -259,7 +224,7 @@ export default function InventoryPage() {
                 try {
                   const token = getToken();
                   const id = ui._id;
-                  const res = await fetch(`${API_BASE}/api/products/admin/${id}`, {
+                  const res = await fetch(`${API_BASE}/api/admin/products/${id}`, {
                     method: "DELETE",
                     headers: {
                       ...(token ? { Authorization: `Bearer ${token}` } : {}),

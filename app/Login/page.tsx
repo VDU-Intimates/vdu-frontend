@@ -7,6 +7,19 @@ import NavBar from "../components/nav-bar/nav-bar";
 import Footer from "../components/footer/footer";
 import toast from "react-hot-toast";
 
+type ApiUser = {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  password?: string;
+  address?: string | null;
+  contact?: string | null;
+  role: string;            // 👈 include role here
+  createdAt: string;
+  updatedAt: string;
+};
+
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 
@@ -42,17 +55,23 @@ const Login = () => {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.message || "Login failed");
       }
+      
 
 
-      const data: { token?: string; user?: unknown } = await res.json();
+      const data: { token?: string; user?: ApiUser } = await res.json();
 
       // // Store JWT (optional: prefer httpOnly cookie on the server for production)
       if (data.token) localStorage.setItem("access_token", data.token);
-      
+    
 
       toast.success("Signed in successfully.");
-      // router.push("/") // optional redirect
-      window.location.assign("/"); 
+
+      if (data.user?.role === "Admin") {
+        window.location.assign("/Dashboard");
+      } else {
+        window.location.assign("/");
+      }
+
     } catch (err: unknown) {
       setMsg(getErrorMessage(err) || "Login failed.");
     } finally {
