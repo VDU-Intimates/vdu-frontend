@@ -12,15 +12,14 @@ export default function Home() {
 
     <div>
       <NavBar />
-    
-    <div className="max-md:px-5 px-10 mt-10">
-      
-      <HeroSection />
-      <BestSelling />
-      <NewArrivals />
-      <ShopByCategory />
-    </div>
-    <Footer />
+        <div className="max-md:px-5 px-10 mt-10">
+          
+          <HeroSection />
+          <BestSelling />
+          <NewArrivals />
+          <ShopByCategory />
+        </div>
+      <Footer />
     </div>
   );
 }
