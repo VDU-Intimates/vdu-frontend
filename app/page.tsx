@@ -1,7 +1,6 @@
 
 'use client';
-import HeroSection from "./components/hero-section/hero-section";
-import Invoice from "./components/Invoice/page";
+import Invoice from "./Invoice/page";
 
 export default function Home() {
   return (
