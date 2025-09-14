@@ -1,7 +1,7 @@
 import AdminNavBar from '@/app/components/nav-bar/admin-nav-bar'
 import React from 'react'
 
-const AdminPanelDashboard = () => {
+const Orders = () => {
   return (
     <div>
         <AdminNavBar />
@@ -9,4 +9,4 @@ const AdminPanelDashboard = () => {
   )
 }
 
-export default AdminPanelDashboard
+export default Orders
