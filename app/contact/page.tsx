@@ -3,6 +3,8 @@
 import { useState } from "react";
 import PrimaryButton from "../components/common-components/primary-button";
 import { Send } from "lucide-react";
+import NavBar from "../components/nav-bar/nav-bar";
+import Footer from "../components/footer/footer";
 
 const ContactPage = () => {
   const [formData, setFormData] = useState({
@@ -52,6 +54,8 @@ const ContactPage = () => {
   };
 
   return (
+    <div>
+      <NavBar />
     <div className="min-h-screen py-10">
       <div className="max-w-5xl mx-auto bg-green-100 p-8 rounded-lg shadow-md">
         <h1 className="text-3xl font-bold text-center mb-8">CONTACT US</h1>
@@ -159,6 +163,8 @@ const ContactPage = () => {
           allowFullScreen
         ></iframe>
       </div>
+    </div>
+    <Footer />
     </div>
   );
 };

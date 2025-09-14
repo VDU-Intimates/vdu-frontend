@@ -14,7 +14,7 @@ const Footer = () => {
     {
       title: "Company & Policies",
       details: [
-        { name: "About Us", link: "/about" },
+        { name: "About Us", link: "/cart" },
         { name: "Contact Us", link: "/contact" },
         { name: "Privacy Policy", link: "/privacy" },
         { name: "Terms & Services", link: "/terms" },

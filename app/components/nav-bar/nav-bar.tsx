@@ -205,12 +205,11 @@ const NavBar = () => {
             >
               <X size={32} />
             </button>
-
             <div className="flex relative flex-shrink-1 w-fit h-fit gap-10 items-center
                        max-md:flex-col justify-center max-xl:gap-5">
               {[
                 { Label: "Bulk Order", href: "/BulkOrder" },
-                { Label: "Contact Us", href: "/ContactUs" },
+                { Label: "Contact Us", href: "/contact" },
                 { Label: "About Us", href: "/AboutUs" },
               ].map((item) => (
                 <p
