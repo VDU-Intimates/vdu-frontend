@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { ChevronDown, SlidersHorizontal, Check } from "lucide-react";
 import ProductCard from "../components/product-card/product-card";
+import NavBar from "../components/nav-bar/nav-bar";
+import Footer from "../components/footer/footer";
 
 type ApiProduct = {
   _id: string;
@@ -229,6 +231,9 @@ const ProductsPage: React.FC = () => {
   }, [queryString]);
 
   return (
+    <div>
+      <NavBar/>
+ 
     <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
       {/* Hero */}
       <section className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
@@ -406,6 +411,8 @@ const ProductsPage: React.FC = () => {
         </div>
       )}
     </main>
+      <Footer />
+    </div>
   );
 };
 
