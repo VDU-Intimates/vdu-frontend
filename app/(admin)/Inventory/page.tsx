@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
 import {
   Box,
   PackagePlus,
@@ -119,7 +118,7 @@ export default function InventoryPage() {
       try {
         setLoading(true);
         setErr(null);
-        const res = await fetch(`${API_BASE}/api/products/admin`);
+        const res = await fetch(`${API_BASE}/api/admin/products`);
         if (!res.ok) throw new Error(`List failed (${res.status})`);
         const json = await res.json();
         const list: ApiProduct[] = Array.isArray(json) ? json : json.data ?? [];
@@ -176,7 +175,7 @@ export default function InventoryPage() {
               onCreated={async (ui) => {
                 try {
                   const token = getToken();
-                  const res = await fetch(`${API_BASE}/api/products/admin`, {
+                  const res = await fetch(`${API_BASE}/api/admin/products`, {
                     method: "POST",
                     headers: {
                       "Content-Type": "application/json",
@@ -203,7 +202,7 @@ export default function InventoryPage() {
                   }
                   const token = getToken();
                   const id = ui._id ?? ui.productId!;
-                  const res = await fetch(`${API_BASE}/api/products/admin/${id}`, {
+                  const res = await fetch(`${API_BASE}/api/admin/products/${id}`, {
                     method: "PATCH",
                     headers: {
                       "Content-Type": "application/json",
@@ -225,7 +224,7 @@ export default function InventoryPage() {
                 try {
                   const token = getToken();
                   const id = ui._id;
-                  const res = await fetch(`${API_BASE}/api/products/admin/${id}`, {
+                  const res = await fetch(`${API_BASE}/api/admin/products/${id}`, {
                     method: "DELETE",
                     headers: {
                       ...(token ? { Authorization: `Bearer ${token}` } : {}),

@@ -162,6 +162,7 @@ const NavBar = () => {
   const handleSignOut = () => {
     try {
       localStorage.removeItem("access_token");
+      window.location.assign("/")
     } catch {}
     setCurrentUser(null);
     setUserMenuOpen(false);

@@ -47,8 +47,8 @@ const AdminNavBar = () => {
         <div>
           <button 
             onClick={() => {
-              localStorage.removeItem("token");
-              window.location.href = "/login"; // or use router.push("/login")
+              localStorage.removeItem("access_token");
+              window.location.href = "/Login"; // or use router.push("/login")
             }}
             className="flex items-center space-x-2 text-red-600 px-3 py-2 rounded-md hover:bg-red-100 transition"
           >

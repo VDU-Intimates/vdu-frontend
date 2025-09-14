@@ -66,7 +66,7 @@ const Login = () => {
 
       toast.success("Signed in successfully.");
 
-      if (data.user?.role === "admin") {
+      if (data.user?.role === "Admin") {
         window.location.assign("/Dashboard");
       } else {
         window.location.assign("/");
