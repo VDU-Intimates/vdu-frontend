@@ -4,11 +4,13 @@ import { ArrowLeft } from 'lucide-react';
 import CartItem from '../components/cart/cart-item';
 import OrderSummary from '../components/cart/order-summary';
 import DeliveringTo from '../components/cart/delivering-to';
+import NavBar from '../components/nav-bar/nav-bar';
+import Footer from '../components/footer/footer';
 
 const CartPage = () => {
   const [cartItems, setCartItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true); // Start with loading true
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Form data for delivery
   const [deliveryInfo, setDeliveryInfo] = useState({
@@ -31,20 +33,20 @@ const CartPage = () => {
       // Debug: Check all possible token locations
       const authToken = localStorage.getItem('authToken');
       const token = localStorage.getItem('token');
-      const accessToken = localStorage.getItem('accessToken');
+      const access_token = localStorage.getItem('access_token');
       const jwtToken = localStorage.getItem('jwt');
       const userToken = localStorage.getItem('userToken');
 
       console.log('Debug - Available tokens:', {
         authToken: authToken ? 'exists' : 'null',
         token: token ? 'exists' : 'null',
-        accessToken: accessToken ? 'exists' : 'null',
+        accessToken: access_token ? 'exists' : 'null',
         jwtToken: jwtToken ? 'exists' : 'null',
         userToken: userToken ? 'exists' : 'null'
       });
 
       // Get token from localStorage - check all common locations
-      const finalToken = authToken || token || accessToken || jwtToken || userToken;
+      const finalToken = authToken || token || access_token || jwtToken || userToken;
 
       console.log('Debug - Using token:', finalToken ? `${finalToken.substring(0, 20)}...` : 'NO TOKEN FOUND');
 
@@ -336,6 +338,8 @@ const CartPage = () => {
   }
 
   return (
+    <div>
+      <NavBar />
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
@@ -410,6 +414,9 @@ const CartPage = () => {
         )}
       </div>
     </div>
+    <Footer />
+    </div>
+
   );
 };
 

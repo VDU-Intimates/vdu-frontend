@@ -224,7 +224,6 @@ const NavBar = () => {
 
             {/* Cart */}
             <div className="flex relative flex-shrink-0 w-fit h-fit cursor-pointer gap-5">
-
               <Link href="/cart">
               <p
                 className={` text-dark-green font-bold text-sm sm:text-sm md:text-xs lg:text-sm xl:text-base 
