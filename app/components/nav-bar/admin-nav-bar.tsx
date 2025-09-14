@@ -6,8 +6,8 @@ import { Home, Package, ShoppingCart, Users, LogOut, Search } from "lucide-react
 
 const AdminNavBar = () => {
   const menuItems = [
-    { name: "Dashboard", icon: <Home className="h-5 w-5" />, path: "/dashboard" },
-    { name: "Inventory", icon: <Package className="h-5 w-5" />, path: "/inventory" },
+    { name: "Dashboard", icon: <Home className="h-5 w-5" />, path: "/Dashboard" },
+    { name: "Inventory", icon: <Package className="h-5 w-5" />, path: "/Inventory" },
     { name: "Orders", icon: <ShoppingCart className="h-5 w-5" />, path: "/orders" },
     { name: "Users", icon: <Users className="h-5 w-5" />, path: "/users" },
   ];
