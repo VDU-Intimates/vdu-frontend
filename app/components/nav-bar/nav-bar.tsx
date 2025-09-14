@@ -224,6 +224,7 @@ const NavBar = () => {
 
             {/* Cart */}
             <div className="flex relative flex-shrink-0 w-fit h-fit cursor-pointer gap-5">
+              <Link href="/cart">
               <p
                 className={` text-dark-green font-bold text-sm sm:text-sm md:text-xs lg:text-sm xl:text-base 
                   ${openTop ? "flex" : "hidden"}`}
@@ -240,6 +241,7 @@ const NavBar = () => {
               <span className="absolute -top-3 right-3.5 w-5 h-5 flex items-center justify-center rounded-full bg-light-green text-white text-sm font-bold max-md:text-xs max-md:w-4 max-md:h-4">
                 0
               </span>
+              </Link>
             </div>
 
             {/* Auth section */}
