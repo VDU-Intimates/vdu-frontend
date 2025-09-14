@@ -5,6 +5,9 @@ import Link from "next/link";
 import Image from "next/image";
 import NavBar from "../components/nav-bar/nav-bar";
 import Footer from "../components/footer/footer";
+import toast from "react-hot-toast";
+
+
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
@@ -18,19 +21,26 @@ function getErrorMessage(err: unknown): string {
 }
 
 const Register = () => {
-  const [firstName, setFirstName] = useState("");
-  const [lastName,  setLastName ] = useState("");
-  const [email,     setEmail    ] = useState("");
-  const [phoneNo,   setPhoneNo  ] = useState("");
-  const [address,   setAddress  ] = useState("");
-  const [password,  setPassword ] = useState("");
-  const [confirm,   setConfirm  ] = useState("");
-  const [busy,      setBusy     ] = useState(false);
-  const [msg,       setMsg      ] = useState<string | null>(null);
+
+  const [fName, setFirstName] = useState("");
+  const [lName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [contact, setContact] = useState("");
+  const [address, setAddress] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  // show/hide password
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const confirmValid = confirm === password && confirm.length > 0;
+  const passwordValid = password.length >= 10;
   const canSubmit =
-    !!firstName && !!lastName && !!email && !!password && confirmValid;
+    !!fName && !!lName && !!email && passwordValid && confirmValid;
+
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,12 +54,12 @@ const Register = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          firstName,
-          lastName,
+          fName,
+          lName,
           email,
-          phone: phoneNo,
-          address,
           password,
+          address,
+          contact,
         }),
       });
 
@@ -60,15 +70,15 @@ const Register = () => {
 
       const data: { token?: string; user?: unknown } = await res.json();
 
-      // Store JWT (optional: use httpOnly cookie instead for better security)
+
       if (data.token) {
         localStorage.setItem("access_token", data.token);
       }
 
-      setMsg("Account created successfully.");
-      // router.push("/Login") // optional redirect
+      toast.success("Account created successfully.");
+      window.location.assign("/"); 
     } catch (err: unknown) {
-      setMsg(getErrorMessage(err));
+      toast.error(getErrorMessage(err));
     } finally {
       setBusy(false);
     }
@@ -95,7 +105,7 @@ const Register = () => {
                   <label className="block text-sm font-medium text-neutral-700">First Name</label>
                   <input
                     placeholder="Jane"
-                    value={firstName}
+                    value={fName}
                     onChange={(e) => setFirstName(e.target.value)}
                     className="mt-1 w-full rounded-xl border border-neutral-300 bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-[#F3C86A] focus:border-transparent"
                   />
@@ -104,7 +114,7 @@ const Register = () => {
                   <label className="block text-sm font-medium text-neutral-700">Last Name</label>
                   <input
                     placeholder="Doe"
-                    value={lastName}
+                    value={lName}
                     onChange={(e) => setLastName(e.target.value)}
                     className="mt-1 w-full rounded-xl border border-neutral-300 bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-[#F3C86A] focus:border-transparent"
                   />
@@ -127,8 +137,8 @@ const Register = () => {
                 <input
                   type="text"
                   placeholder="0777123456"
-                  value={phoneNo}
-                  onChange={(e) => setPhoneNo(e.target.value)}
+                  value={contact}
+                  onChange={(e) => setContact(e.target.value)}
                   className="mt-1 w-full rounded-xl border border-neutral-300 bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-[#F3C86A] focus:border-transparent"
                 />
               </div>
@@ -146,29 +156,53 @@ const Register = () => {
 
               <div>
                 <label className="block text-sm font-medium text-neutral-700">Password</label>
-                <input
-                  type="password"
-                  placeholder="Enter password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-neutral-300 bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-[#F3C86A] focus:border-transparent"
-                />
-                <p className="mt-1 text-xs text-neutral-500">
-                  Password will be validated by the server.
-                </p>
+
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-neutral-300 bg-white px-4 py-2 pr-10 outline-none focus:ring-2 focus:ring-[#F3C86A] focus:border-transparent"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-sm text-[#AD7718]"
+                  >
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
+                {!passwordValid && password.length > 0 && (
+                  <p className="mt-1 text-xs text-red-500">
+                    Password must be at least 10 characters.
+                  </p>
+                )}
+
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-neutral-700">Confirm password</label>
-                <input
-                  type="password"
-                  placeholder="Re-type your password"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  className={`mt-1 w-full rounded-xl border bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-[#F3C86A] focus:border-transparent ${
-                    confirm && !confirmValid ? "border-red-300" : "border-neutral-300"
-                  }`}
-                />
+
+                <div className="relative">
+                  <input
+                    type={showConfirm ? "text" : "password"}
+                    placeholder="Re-type your password"
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    className={`mt-1 w-full rounded-xl border bg-white px-4 py-2 pr-10 outline-none focus:ring-2 focus:ring-[#F3C86A] focus:border-transparent ${
+                      confirm && !confirmValid ? "border-red-300" : "border-neutral-300"
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                    className="absolute right-3 top-3 text-sm text-[#AD7718]"
+                  >
+                    {showConfirm ? "Hide" : "Show"}
+                  </button>
+                </div>
+
                 {!confirmValid && confirm.length > 0 && (
                   <p className="text-xs text-red-500 mt-1">Passwords do not match.</p>
                 )}
@@ -200,7 +234,7 @@ const Register = () => {
           {/* Right: image */}
           <div className="relative lg:border-l border-black/5 min-h-[420px] lg:min-h-[560px]">
             <Image
-              src="/assets/model2.jpg"
+              src="/assets/images/model2.jpg"
               alt="Model wearing intimates"
               fill
               priority
