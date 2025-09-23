@@ -17,6 +17,7 @@ import Buttons from '../components/common-components/button';
 import Footer from '../components/footer/footer';
 import NavBar from '../components/nav-bar/nav-bar';
 import { useSearchParams } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 /* ===========================
    Helpers & Types
@@ -469,9 +470,11 @@ const CustomizationPage = () => {
         throw new Error(`Save failed (${res.status}) ${txt}`);
       }
       console.log('[save] success');
+      toast.success("Design Saved");
       await loadDesigns();
     } catch (e) {
       console.error('[save] error:', e);
+      toast.error("Error Saving Design");
     }
   }
 
@@ -482,24 +485,45 @@ const CustomizationPage = () => {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       if (!res.ok) throw new Error(`Delete failed (${res.status})`);
+      toast.success("Design Deleted")
       await loadDesigns();
     } catch (e) {
       console.error('[delete] error:', e);
+      toast.error("Error deleting Design")
     }
   }
 
-  function previewDesign() {
+  async function previewDesign() {
     const canvas = fRef.current;
     if (!canvas) return;
-
-    const zonePng = canvas.toDataURL({ format: 'png', multiplier: 3, enableRetinaScaling: true });
+  
+    // Export the current zone design
+    const zonePng = canvas.toDataURL({
+      format: 'png',
+      multiplier: 3,
+      enableRetinaScaling: true,
+    });
+  
+    // Composite onto the product background (photoUrl or placeholder)
+    const base = productBg;
+    let finalOut = zonePng;
+    try {
+      finalOut = await composeDesignOnBase(zonePng, base);
+    } catch (e) {
+      console.warn('[preview] compose failed, falling back to zone only:', e);
+    }
+  
+    // Open preview window with composited design
     const win = window.open('', '_blank');
     if (win) {
       win.document.write('<title>Design Preview</title>');
-      win.document.write(`<img src="${zonePng}" style="display:block;max-width:100%;height:auto;" />`);
+      win.document.write(
+        `<img src="${finalOut}" style="display:block;max-width:100%;height:auto;" />`
+      );
       win.document.close();
     }
   }
+  
 
   /* ===========================
      UI
@@ -620,7 +644,7 @@ const CustomizationPage = () => {
                           id="image-selector"
                           ref={fileInputRef}
                           onChange={handleAddImage}
-                          accept="image/*"
+                          // accept="image/*"
                         />
                       </label>
 

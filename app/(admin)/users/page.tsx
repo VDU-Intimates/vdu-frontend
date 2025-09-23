@@ -207,7 +207,6 @@ const UserManagement = () => {
                 <span>Full Name</span>
                 <span>Email</span>
                 <span>Contact</span>
-                <span>Role</span>
                 <span>Action</span>
               </div>
 
@@ -239,10 +238,7 @@ const UserManagement = () => {
                           {user.email}
                         </span>
                         <span className="text-sm text-gray-600">{user.contact}</span>
-                        <span className="inline-flex px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                          <Shield size={14} className="mr-1" />
-                          {user.role}
-                        </span>
+                        {/* View Button  */}
                         <div className="flex gap-2">
                           <button
                             onClick={() => setSelectedUser(user)}
@@ -299,12 +295,8 @@ const UserManagement = () => {
                         </div>
                         
                         <div className="flex gap-2">
-                          <button
-                            onClick={() => setSelectedUser(user)}
-                            className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
-                          >
-                            View Details
-                          </button>
+                          
+                          {/*  Delete User button */}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();

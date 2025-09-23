@@ -158,7 +158,7 @@ const NavBar = () => {
       setSaving(false);
     }
   };
-
+  //Sign Out
   const handleSignOut = () => {
     try {
       localStorage.removeItem("access_token");

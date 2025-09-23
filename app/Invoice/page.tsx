@@ -1,4 +1,7 @@
+'use client'
 import React, { useEffect, useState } from "react";
+import NavBar from "../components/nav-bar/nav-bar";
+import Footer from "../components/footer/footer";
 
 const Invoice = ({ orderId }) => {
   const [order, setOrder] = useState(null);
@@ -94,6 +97,7 @@ const Invoice = ({ orderId }) => {
 
   if (loading) {
     return (
+      
       <div className="min-h-screen bg-[#D9EAD6] flex items-center justify-center p-6">
         <div className="bg-white w-full max-w-5xl shadow-lg rounded-xl p-8 text-center">
           <p className="text-gray-500">Loading invoice...</p>
@@ -104,10 +108,15 @@ const Invoice = ({ orderId }) => {
 
   if (error) {
     return (
+      <div>
+
+      <NavBar />
       <div className="min-h-screen bg-[#D9EAD6] flex items-center justify-center p-6">
         <div className="bg-white w-full max-w-5xl shadow-lg rounded-xl p-8 text-center">
           <p className="text-red-500">Error: {error}</p>
         </div>
+      </div>
+      <Footer />
       </div>
     );
   }
@@ -123,6 +132,8 @@ const Invoice = ({ orderId }) => {
   }
 
   return (
+    <div>
+    <NavBar />
     <div className="min-h-screen bg-[#D9EAD6] flex items-center justify-center p-6">
       <div className="bg-white w-full max-w-5xl shadow-lg rounded-xl p-8">
         {/* Header Section */}
@@ -254,6 +265,8 @@ const Invoice = ({ orderId }) => {
           </p>
         </div>
       </div>
+    </div>
+            <Footer/>
     </div>
   );
 };
