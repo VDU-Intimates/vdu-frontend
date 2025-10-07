@@ -353,20 +353,24 @@ const Login: React.FC = () => {
                     <button
                       type="button"
                       disabled
-                      className="rounded-xl border border-neutral-300 bg-white py-2 font-medium flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"
+                      className="rounded-xl border border-neutral-300 bg-white py-2 font-medium flex items-center justify-center gap-2 cursor-not-allowed"
                       title="Google not configured (JWT auth in use)"
                     >
-                      <span className="inline-block h-5 w-5 rounded-full bg-neutral-300" />
+                      <span className="inline-block h-5 w-5 rounded-full">
+                        <Image src="/assets/images/google-icon.png" alt="Google Icon" width={24} height={24}/>
+                      </span>
                       <span>Google</span>
                     </button>
 
                     <button
                       type="button"
                       disabled
-                      className="rounded-xl border border-neutral-300 bg-white py-2 font-medium flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"
+                      className="rounded-xl border border-neutral-300 bg-white py-2 font-medium flex items-center justify-center gap-2 cursor-not-allowed"
                       title="Facebook not configured"
                     >
-                      <span className="inline-block h-5 w-5 rounded-full bg-neutral-300" />
+                      <span className="inline-block h-5 w-5 rounded-full bg-neutral-300" >
+                        <Image src="/assets/images/facebook-icon.png" alt="Google Icon" width={24} height={24}/>
+                      </span>
                       <span>Facebook</span>
                     </button>
                   </div>
