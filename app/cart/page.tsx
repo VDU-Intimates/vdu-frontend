@@ -311,6 +311,9 @@ const CartPage = () => {
   const handleContinueShopping = () => {
     window.history.back();
   };
+  const handleStartShopping = () => {
+    window.location.assign("/AllProducts")
+  };
 
   // Error state
   if (error && !isLoading) {
@@ -370,7 +373,7 @@ const CartPage = () => {
               {cartItems.length === 0 ? (
                 <div className="text-center py-16 bg-white rounded-lg">
                   <p className="text-gray-500 text-lg mb-4">Your cart is empty</p>
-                  <button onClick={handleContinueShopping} className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                  <button onClick={handleStartShopping} className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
                     Start Shopping
                   </button>
                 </div>
