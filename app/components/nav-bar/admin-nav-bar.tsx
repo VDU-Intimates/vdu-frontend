@@ -3,6 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import { Home, Package, ShoppingCart, Users, LogOut, Search } from "lucide-react";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
 
 const AdminNavBar = () => {
   const menuItems = [
@@ -12,24 +14,34 @@ const AdminNavBar = () => {
     { name: "Users", icon: <Users className="h-5 w-5" />, path: "/users" },
   ];
 
+  const pathname = usePathname();
+
+  // Extract last part of the path (e.g. /Dashboard → Dashboard)
+  const currentPage =
+    pathname === "/"
+      ? "Dashboard"
+      : pathname.replace("/", "").replace(/^\w/, (c) => c.toUpperCase());
+
   return (
-    <div className="h-screen flex">
+    <div className="min-h-screen flex">
       {/* Sidebar */}
       <div className="h-full w-64 bg-[#e6d0a7] flex flex-col justify-between p-4">
         {/* User Info */}
         <div>
           <div className="flex flex-col items-center mb-6">
-            <img
-              src="/assets/profile.jpg"
+            <Image
+              src="/assets/images/profile.jpg"
               alt="ProfilePic"
               className="h-20 w-20 rounded-full object-cover mb-2"
+              width={40}
+              height={40}
             />
             <h2 className="text-lg font-semibold">Sathees Malavan</h2>
             <p className="text-sm text-gray-700">satheesmalavan100@gmail.com</p>
           </div>
 
           {/* Menu */}
-          <nav className="space-y-2">
+          <nav className="flex flex-col justify-around h-full">
             {menuItems.map((item, index) => (
               <Link key={`${item.name}-${index}`} href={item.path}>
                 <div
@@ -63,7 +75,7 @@ const AdminNavBar = () => {
         className="h-16 bg-white shadow flex items-center px-6 justify-between fixed top-0 right-0 z-50"
         style={{ width: "calc(100% - 16rem)", marginLeft: "16rem" }}
       >
-        <h1 className="text-xl font-semibold">Admin Panel</h1>
+        <h1 className="text-xl font-semibold">{currentPage}</h1>
 
         <div className="flex items-center w-full max-w-xs bg-gray-100 rounded-lg px-3 py-2">
           <Search className="h-5 w-5 text-gray-500" />
