@@ -146,7 +146,7 @@ export default function InventoryPage() {
             />
           </div>
           <h2 className="font-semibold text-lg mt-3">Sathees Malavan</h2>
-          <p className="text-sm text-gray-800">satheesmalaqvan100@gmail.com</p>
+          <p className="text-sm text-gray-800">satheesmalavan100@gmail.com</p>
         </div>
 
         <nav className="mt-8">
@@ -802,6 +802,11 @@ function AllProducts({ items }: { items: UIProduct[] }) {
       )),
     [items]
   );
+
+  <li className="flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-white/70 hover:text-green-800 transition-colors cursor-pointer">
+  <ClipboardList size={18} className="hover:text-green-800 transition-colors" /> DashBoard
+</li>
+
 
   return (
     <div className="bg-white rounded-2xl shadow">
