@@ -4,11 +4,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
+  Download,
   PackagePlus,
   PencilLine,
   Trash2,
 } from "lucide-react";
 import AdminNavBar from "@/app/components/nav-bar/admin-nav-bar";
+import Buttons from "@/app/components/common-components/button";
 
 /* =========================
    Config & Helpers
@@ -44,10 +46,10 @@ type UIProduct = {
   description: string;
   category: "T-Shirt" | "Intimate"; // UI categories
   price: number;
-  stock: number; // UI-only
   image: string; // photoUrl (can be base64 or URL)
   colors?: string[];
   sizes?: string[];
+  stock: number; // UI-only
 };
 
 // Backend product (subset, matches your model)
@@ -61,6 +63,7 @@ type ApiProduct = {
   colors: string[];
   sizes: string[];
   category: "T-Shirt" | "Intimate";
+  stock: number;
 };
 
 /* =========================
@@ -75,10 +78,10 @@ function apiToUI(p: ApiProduct): UIProduct {
     description: p.description,
     category: p.category === "Intimate" ? "Intimate" : "T-Shirt",
     price: p.price,
-    stock: 0,
     image: p.photoUrl,
     colors: p.colors ?? [],
     sizes: p.sizes ?? [],
+    stock: p.stock,
   };
 }
 
@@ -95,6 +98,7 @@ function uiToApi(p: UIProduct): Partial<ApiProduct> {
     colors: colors.length ? colors : ["default"], // keep backend validator happy
     sizes: sizes.length ? sizes : ["M"],
     category: p.category === "T-Shirt" ? "T-Shirt" : "Intimate",
+    stock:p.stock
   };
 }
 
@@ -107,6 +111,37 @@ type View = "add" | "update" | "all";
    Page
 ========================= */
 export default function InventoryPage() {
+
+  async function downloadCsv() {
+    try {
+      // If you add filters, build a query string here to pass along.
+      const url = `${API_BASE}/api/admin/products/report`;
+      const res = await fetch(url, {
+        // if you want it protected:
+        // headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : undefined
+      });
+      if (!res.ok) throw new Error(`Download failed (${res.status})`);
+      const blob = await res.blob();
+      const urlObj = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = urlObj;
+      const d = new Date();
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0'); // 01-12
+      const year = d.getFullYear();
+      const hours = String(d.getHours()).padStart(2, "0");
+      const minutes = String(d.getMinutes()).padStart(2, "0");
+      const dt = `${day}-${month}-${year}-${hours}-${minutes}`;
+      a.download = `inventory-report-${dt}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(urlObj);
+    } catch (e) {
+      alert(`Failed to download report: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
   const [view, setView] = useState<View>("all");
   const [products, setProducts] = useState<UIProduct[]>([]);
   const [loading, setLoading] = useState(false);
@@ -138,8 +173,9 @@ export default function InventoryPage() {
 
       {/* Main */}
       <main className="flex-1 p-8">
-        <h1 className="text-2xl font-bold">Inventory</h1>
-
+        <div className="flex justify-end mt-15 mb-5">
+          <Buttons context="Download Report" icon={Download} onClick={downloadCsv} />
+        </div>
         <div className="flex items-center justify-center mb-6">
           <div className="flex gap-7 ">
             <ToolbarButton
@@ -499,19 +535,8 @@ function AddNewProduct({ onCreated }: { onCreated: (p: UIProduct) => Promise<voi
         />
 
         <div className="flex gap-3">
-          <button
-            disabled={!canCreate}
-            onClick={handleCreate}
-            className={[
-              "px-4 py-2 rounded-xl",
-              canCreate ? "bg-[#5f6f46] text-white" : "bg-gray-300 text-gray-600",
-            ].join(" ")}
-          >
-            ADD NEW PRODUCT
-          </button>
-          <button
-            className="px-4 py-2 rounded-xl bg-red-500/90 text-white"
-            onClick={() =>
+          <Buttons context="ADD NEW PRODUCT" disabled={!canCreate} onClick={handleCreate} />
+          <Buttons context="RESET" onClick={() =>
               setForm({
                 name: "",
                 description: "",
@@ -523,10 +548,7 @@ function AddNewProduct({ onCreated }: { onCreated: (p: UIProduct) => Promise<voi
                 colors: [],
                 sizes: [],
               })
-            }
-          >
-            RESET
-          </button>
+            } combo="redTransparent" className="px-10"/>
         </div>
       </div>
 
@@ -661,18 +683,37 @@ function UpdateProduct({
 
       <label className="block text-sm font-medium">Stock</label>
       <div className="flex items-center gap-3 mb-4">
+        {/* Decrease Button */}
         <button
           className="px-2 py-1 rounded border"
           onClick={() =>
-            setSelected((s) => (s ? { ...s, stock: Math.max(0, s.stock - 1) } : s))
+            setSelected((s) =>
+              s ? { ...s, stock: Math.max(0, s.stock - 1) } : s
+            )
           }
         >
           –
         </button>
-        <span className="min-w-[32px] text-center">{selected.stock}</span>
+
+        {/* Editable Input */}
+        <input
+          type="number"
+          min={0}
+          value={selected.stock}
+          onChange={(e) =>
+            setSelected((s) =>
+              s ? { ...s, stock: Math.max(0, Number(e.target.value) || 0) } : s
+            )
+          }
+          className="w-20 text-center rounded border p-1 focus:ring-1 focus:ring-[#5f6f46] outline-none"
+        />
+
+        {/* Increase Button */}
         <button
           className="px-2 py-1 rounded border"
-          onClick={() => setSelected((s) => (s ? { ...s, stock: s.stock + 1 } : s))}
+          onClick={() =>
+            setSelected((s) => (s ? { ...s, stock: s.stock + 1 } : s))
+          }
         >
           +
         </button>
@@ -722,18 +763,9 @@ function UpdateProduct({
       />
 
       <div className="flex gap-3">
-        <button
-          className="px-4 py-2 rounded-xl bg-red-500/90 text-white"
-          onClick={() => setSelected(items[0] ?? null)}
-        >
-          RESET
-        </button>
-        <button
-          className="px-4 py-2 rounded-xl bg-[#5f6f46] text-white"
-          onClick={() => selected && onUpdated(selected)}
-        >
-          UPDATE PRODUCT
-        </button>
+        <Buttons context="RESET" combo="redTransparent" className="px-8" onClick={() => setSelected(items[0] ?? null)} />
+        
+        <Buttons context="UPDATE PRODUCT"  onClick={() => selected && onUpdated(selected)} />
       </div>
     </div>
   );
