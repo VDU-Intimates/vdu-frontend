@@ -1,53 +1,78 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Minus } from 'lucide-react';
 
-export default function NumberStepper() {
-  const [value, setValue] = useState(1);
+interface NumberStepperProps {
+  value: number;
+  onChange: (newValue: number) => void;
+  min: number;
+  max: number;
+}
+
+export default function NumberStepper({ value, onChange, min, max }: NumberStepperProps) {
+  const [localValue, setLocalValue] = useState(value);
   const [isEditing, setIsEditing] = useState(false);
-  const [inputValue, setInputValue] = useState('1');
+  const [inputValue, setInputValue] = useState(value.toString());
+
+  // Keep local state in sync with external prop value
+  useEffect(() => {
+    setLocalValue(value);
+    if (!isEditing) {
+        setInputValue(value.toString());
+    }
+  }, [value, isEditing]);
+
+  const updateQuantity = (newValue: number) => {
+    let finalValue = Math.max(min, Math.min(max, newValue));
+    setLocalValue(finalValue);
+    onChange(finalValue); // Propagate change up to CartItem -> CartPage
+  };
 
   const increment = () => {
-    setValue(prev => prev + 1);
+    updateQuantity(localValue + 1);
   };
 
   const decrement = () => {
-    setValue(prev => prev - 1);
+    updateQuantity(localValue - 1);
   };
 
   const handleNumberClick = () => {
     setIsEditing(true);
-    setInputValue(value.toString());
+    setInputValue(localValue.toString());
   };
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
   };
 
   const handleInputBlur = () => {
     const numValue = parseInt(inputValue);
     if (!isNaN(numValue)) {
-      setValue(numValue);
+      updateQuantity(numValue);
     } else {
-      setInputValue(value.toString());
+      setInputValue(localValue.toString());
     }
     setIsEditing(false);
   };
 
-  const handleInputKeyDown = (e) => {
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleInputBlur();
     } else if (e.key === 'Escape') {
-      setInputValue(value.toString());
+      setInputValue(localValue.toString());
       setIsEditing(false);
     }
   };
+
+  const canDecrement = localValue > min;
+  const canIncrement = localValue < max;
 
   return (
       <div className="flex items-center bg-white rounded-lg border border-gray-200 shadow-sm">
         {/* Decrement Button */}
         <button
           onClick={decrement}
-          className="flex items-center justify-center w-10 h-10 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-l-lg border-r border-gray-200 transition-colors"
+          className={`flex items-center justify-center w-10 h-10 text-gray-600 hover:text-gray-800 rounded-l-lg border-r border-gray-200 transition-colors ${canDecrement ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'}`}
+          disabled={!canDecrement}
         >
           <Minus size={16} />
         </button>
@@ -57,6 +82,7 @@ export default function NumberStepper() {
           {isEditing ? (
             <input
               type="text"
+              pattern="\d*" // Suggests only digits are expected
               value={inputValue}
               onChange={handleInputChange}
               onBlur={handleInputBlur}
@@ -69,7 +95,7 @@ export default function NumberStepper() {
               onClick={handleNumberClick}
               className="w-full h-full text-lg font-medium text-gray-800 hover:bg-gray-50 transition-colors"
             >
-              {value}
+              {localValue}
             </button>
           )}
         </div>
@@ -77,7 +103,8 @@ export default function NumberStepper() {
         {/* Increment Button */}
         <button
           onClick={increment}
-          className="flex items-center justify-center w-10 h-10 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-r-lg border-l border-gray-200 transition-colors"
+          className={`flex items-center justify-center w-10 h-10 text-gray-600 hover:text-gray-800 rounded-r-lg border-l border-gray-200 transition-colors ${canIncrement ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'}`}
+          disabled={!canIncrement}
         >
           <Plus size={16} />
         </button>

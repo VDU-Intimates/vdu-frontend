@@ -7,6 +7,7 @@ type DeliveryInfo = {
   address?: string;
   phoneNumber?: string;
   email?: string;
+  paymentMethod?: string;
 };
 
 type Props = {
@@ -18,7 +19,7 @@ type Props = {
   termsText?: string;
 };
 
-const nameRx = /^[A-Za-zÀ-ÖØ-öø-ÿ'’.-]+(?:\s+[A-Za-zÀ-ÖØ-öø-ÿ'’.-]+)+$/; // at least two words
+const nameRx = /^[A-Za-zÀ-ÖØ-öø-ÿ''.-]+(?:\s+[A-Za-zÀ-ÖØ-öø-ÿ''.-]+)+$/; // at least two words
 const emailRx =
   /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
 // Sri Lanka examples: 0XXXXXXXXX (10 digits) or +94XXXXXXXXX (11 digits after +94)
@@ -146,7 +147,6 @@ const DeliveringTo: React.FC<Props> = ({
         </div>
 
         {/* Phone + Email */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <input
               type="tel"
@@ -189,6 +189,36 @@ const DeliveringTo: React.FC<Props> = ({
                 {errors.email}
               </p>
             )}
+          </div>
+
+        {/* Payment Method */}
+        <div className="pt-2">
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Payment Method
+          </label>
+          <div className="space-y-3">
+            <label className="flex items-center cursor-pointer p-3 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="cod"
+                checked={deliveryInfo.paymentMethod === 'cod'}
+                onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
+                className="w-4 h-4 text-blue-600 focus:ring-blue-500 focus:ring-2"
+              />
+              <span className="ml-3 text-sm text-gray-700 font-medium">Cash on Delivery (COD)</span>
+            </label>
+            <label className="flex items-center cursor-pointer p-3 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="payNow"
+                checked={deliveryInfo.paymentMethod === 'payNow'}
+                onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
+                className="w-4 h-4 text-blue-600 focus:ring-blue-500 focus:ring-2"
+              />
+              <span className="ml-3 text-sm text-gray-700 font-medium">Pay Now</span>
+            </label>
           </div>
         </div>
 

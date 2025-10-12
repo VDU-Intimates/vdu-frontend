@@ -1,11 +1,31 @@
 import React from 'react';
 import { Trash2 } from 'lucide-react';
-import NumberStepper from './quantity-selector';
+import NumberStepper from './quantity-selector'; // Assuming this is the new NumberStepper file
 import Image from 'next/image';
 
-const CartItem = ({ item, onQuantityChange, onRemove, currency = "Rs." }) => {
-  const handleQuantityChange = (newQuantity) => {
-    onQuantityChange(item.id, newQuantity);
+// Use the type defined in CartPage
+interface CartItemType {
+  id: string;
+  productId: string;
+  name: string;
+  price: number;
+  imageUrl: string;
+  size: string;
+  quantity: number;
+}
+
+interface CartItemProps {
+  item: CartItemType;
+  onQuantityChange: (itemId: string, newQuantity: number) => Promise<void>;
+  onRemove: (itemId: string) => Promise<void>;
+  currency?: string;
+}
+
+const CartItem: React.FC<CartItemProps> = ({ item, onQuantityChange, onRemove, currency = "Rs." }) => {
+  // Directly call the parent handler
+  const handleQuantityChange = (newQuantity: number) => {
+    // The parent (CartPage) handles the state update and API call
+    onQuantityChange(item.id, newQuantity); 
   };
 
   return (
@@ -16,9 +36,11 @@ const CartItem = ({ item, onQuantityChange, onRemove, currency = "Rs." }) => {
         width={64}
         height={64}
         className="object-cover rounded-md flex-shrink-0"
-        onError={(e) => {
-          e.target.src = '/assets/placeholder.jpg';
+        onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+          (e.target as HTMLImageElement).src = '/assets/placeholder.jpg';
         }}
+        // Next/Image requires style/layout props if not using fill, or specify size
+        style={{ width: '64px', height: '64px' }} 
       />
       
       <div className="flex-1 min-w-0">
@@ -31,8 +53,8 @@ const CartItem = ({ item, onQuantityChange, onRemove, currency = "Rs." }) => {
       <div className="flex items-center gap-4">
         {/* Quantity Controls */}
         <NumberStepper
-          value={item.quantity}
-          onChange={handleQuantityChange}
+          value={item.quantity} // Passes the current quantity
+          onChange={handleQuantityChange} // Calls handleQuantityChange
           min={1}
           max={99}
         />
@@ -40,10 +62,11 @@ const CartItem = ({ item, onQuantityChange, onRemove, currency = "Rs." }) => {
         {/* Price */}
         <div className="text-right min-w-[80px]">
           <span className="font-medium">
-            {currency}{(item.price * item.quantity).toFixed(2)}
+            {/* The price automatically reflects the state change from CartPage */}
+            {currency}{(item.price * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
           <div className="text-xs text-gray-500">
-            {currency}{item.price} each
+            {currency}{item.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} each
           </div>
         </div>
 

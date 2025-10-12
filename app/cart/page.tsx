@@ -1,26 +1,60 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { ArrowLeft, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import CartItem from '../components/cart/cart-item';
 import OrderSummary from '../components/cart/order-summary';
 import DeliveringTo from '../components/cart/delivering-to';
 import NavBar from '../components/nav-bar/nav-bar';
 import Footer from '../components/footer/footer';
 
+// --- TYPE DEFINITIONS ---
+
+interface CartItemType {
+  id: string; // The item ID in the cart (backend _id)
+  productId: string;
+  name: string;
+  price: number;
+  imageUrl: string;
+  size: string;
+  quantity: number;
+}
+
+interface DeliveryInfoType {
+  fullName: string;
+  address: string;
+  phoneNumber: string;
+  email: string;
+}
+
+// --- CART PAGE COMPONENT ---
+
 const CartPage = () => {
-  const [cartItems, setCartItems] = useState([]);
-  const [isLoading, setIsLoading] = useState(true); // Start with loading true
+  const router = useRouter(); 
+  
+  // 1. Explicitly type useState for cartItems
+  const [cartItems, setCartItems] = useState<CartItemType[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Form data for delivery
-  const [deliveryInfo, setDeliveryInfo] = useState({
+  // 2. Explicitly type useState for deliveryInfo
+  const [deliveryInfo, setDeliveryInfo] = useState<DeliveryInfoType>({
     fullName: '',
     address: '',
     phoneNumber: '',
     email: ''
   });
 
-  // Fetch cart data when component mounts
+  // Get token helper function (no change needed here)
+  const getAuthToken = (): string | null => {
+    return localStorage.getItem('authToken') || 
+           localStorage.getItem('token') || 
+           localStorage.getItem('access_token') ||
+           localStorage.getItem('jwt') ||
+           localStorage.getItem('userToken');
+  };
+
+  // Fetch cart data when component mounts (no change needed here)
   useEffect(() => {
     fetchCartData();
   }, []);
@@ -30,45 +64,24 @@ const CartPage = () => {
       setIsLoading(true);
       setError(null);
 
-      // Debug: Check all possible token locations
-      const authToken = localStorage.getItem('authToken');
-      const token = localStorage.getItem('token');
-      const access_token = localStorage.getItem('access_token');
-      const jwtToken = localStorage.getItem('jwt');
-      const userToken = localStorage.getItem('userToken');
+      const token = getAuthToken();
 
-      console.log('Debug - Available tokens:', {
-        authToken: authToken ? 'exists' : 'null',
-        token: token ? 'exists' : 'null',
-        accessToken: access_token ? 'exists' : 'null',
-        jwtToken: jwtToken ? 'exists' : 'null',
-        userToken: userToken ? 'exists' : 'null'
-      });
+      console.log('Debug - Using token:', token ? `${token.substring(0, 20)}...` : 'NO TOKEN FOUND');
 
-      // Get token from localStorage - check all common locations
-      const finalToken = authToken || token || access_token || jwtToken || userToken;
-
-      console.log('Debug - Using token:', finalToken ? `${finalToken.substring(0, 20)}...` : 'NO TOKEN FOUND');
-
-      if (!finalToken) {
+      if (!token) {
         setError('No authentication token found. Please log in again.');
         return;
       }
 
-      const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${finalToken}`
-      };
-
-      console.log('Debug - Request headers:', headers);
-
       const response = await fetch('http://localhost:5000/api/cart', {
         method: 'GET',
-        headers: headers
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       console.log('Debug - Response status:', response.status);
-      console.log('Debug - Response headers:', [...response.headers.entries()]);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -76,10 +89,9 @@ const CartPage = () => {
         
         if (response.status === 401) {
           setError('Authentication failed. Please log in again.');
-          // Optionally clear invalid tokens
           localStorage.removeItem('authToken');
           localStorage.removeItem('token');
-          localStorage.removeItem('accessToken');
+          localStorage.removeItem('access_token');
           return;
         }
         throw new Error(`Failed to fetch cart: ${response.status} - ${errorText}`);
@@ -89,113 +101,191 @@ const CartPage = () => {
       console.log('Debug - Cart data received:', data);
       
       // Transform backend data to match frontend expectations
-      const transformedItems = data.items.map(item => ({
-        id: item.productId,
-        name: item.productName,
-        price: item.price,
-        imageUrl: item.photoUrl,
-        size: item.size,
-        quantity: item.quantity
+      // Ensure the structure matches CartItemType
+      const transformedItems: CartItemType[] = data.items.map((item: any) => ({
+        id: item._id as string,
+        productId: item.productId as string,
+        name: item.productName as string,
+        price: item.price as number,
+        imageUrl: item.photoUrl as string,
+        size: item.size as string,
+        quantity: item.quantity as number
       }));
 
       console.log('Debug - Transformed items:', transformedItems);
       setCartItems(transformedItems);
     } catch (err) {
       console.error('Error fetching cart:', err);
-      setError('Failed to load cart items');
+      // Casting 'err' to Error to safely access properties
+      setError((err as Error).message || 'Failed to load cart items');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Calculate totals - use backend subtotal if available, otherwise calculate
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const discountPercent = 20;
-  const discountAmount = Math.round((subtotal * discountPercent) / 100);
-  const deliveryFee = 300;
-  const total = subtotal - discountAmount + deliveryFee;
+  // Calculate totals using useMemo to optimize re-renders
+  const orderTotals = useMemo(() => {
+    const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const discountPercent = 20;
+    const discountAmount = Math.round((subtotal * discountPercent) / 100);
+    const deliveryFee = 300;
+    const total = subtotal - discountAmount + deliveryFee;
 
-  // Update quantity in backend and frontend
-  const handleQuantityChange = async (itemId, newQuantity) => {
+    console.log('📊 Order totals recalculated:', { subtotal, discountAmount, deliveryFee, total });
+
+    return {
+      subtotal,
+      discountPercent,
+      discountAmount,
+      deliveryFee,
+      total
+    };
+  }, [cartItems]);
+
+  // 3. Add explicit types for function parameters (itemId: string, newQuantity: number)
+  const handleQuantityChange = async (itemId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
       handleRemoveItem(itemId);
       return;
     }
 
     try {
-      const token = localStorage.getItem('authToken') || 
-                   localStorage.getItem('token') || 
-                   localStorage.getItem('accessToken');
+      const token = getAuthToken();
 
-      // Update in backend (you'll need to create this endpoint)
-      const response = await fetch(`http://localhost:5000/api/cart/update`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        },
-        body: JSON.stringify({
-          productId: itemId,
-          quantity: newQuantity
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update quantity');
+      if (!token) {
+        alert('Please log in to update cart');
+        return;
       }
 
-      // Update frontend state
+      console.log('🔄 Updating quantity for item:', itemId, 'to:', newQuantity);
+
+      // Optimistically update UI first
       setCartItems(prevItems =>
         prevItems.map(item =>
           item.id === itemId ? { ...item, quantity: newQuantity } : item
         )
       );
-    } catch (error) {
-      console.error('Error updating quantity:', error);
-      alert('Failed to update quantity. Please try again.');
-    }
-  };
 
-  // Remove item from backend and frontend
-  const handleRemoveItem = async (itemId) => {
-    try {
-      const token = localStorage.getItem('authToken') || 
-                   localStorage.getItem('token') || 
-                   localStorage.getItem('accessToken');
-
-      // Remove from backend (you'll need to create this endpoint)
-      const response = await fetch(`http://localhost:5000/api/cart/remove`, {
-        method: 'DELETE',
+      // Update in backend
+      const response = await fetch(`http://localhost:5000/api/cart/${itemId}`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          productId: itemId
+          quantity: newQuantity
         })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to remove item');
+        // Revert to original cart items state on failure
+        const errorData = await response.json();
+        await fetchCartData(); // Re-fetch to ensure data is correct
+        throw new Error(errorData.message || 'Failed to update quantity');
       }
 
-      // Update frontend state
-      setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
+      const data = await response.json();
+      console.log('✅ Quantity updated successfully:', data);
+
     } catch (error) {
-      console.error('Error removing item:', error);
-      alert('Failed to remove item. Please try again.');
+      console.error('❌ Error updating quantity:', error);
+      alert('Failed to update quantity. Please try again.');
     }
   };
 
-  const handleDeliveryInputChange = (field, value) => {
+  // 4. Add explicit type for function parameter (itemId: string)
+  const handleRemoveItem = async (itemId: string) => {
+    try {
+      const token = getAuthToken();
+
+      if (!token) {
+        alert('Please log in to remove items');
+        return;
+      }
+
+      console.log('🗑️ Removing item with ID:', itemId);
+
+      const itemToRemove = cartItems.find(item => item.id === itemId);
+      setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
+
+      const response = await fetch(`http://localhost:5000/api/cart/${itemId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (itemToRemove) {
+          // Revert removal on failure
+          setCartItems(prevItems => [...prevItems, itemToRemove]);
+        }
+        throw new Error(errorData.message || 'Failed to remove item');
+      }
+
+      const data = await response.json();
+      console.log('✅ Item removed successfully:', data);
+      
+    } catch (error) {
+      console.error('❌ Error removing item:', error);
+      alert((error as Error).message || 'Failed to remove item. Please try again.');
+    }
+  };
+
+  // Clear all items from cart (no change needed here)
+  const handleClearAllCart = async () => {
+    const confirmClear = window.confirm('Are you sure you want to clear all items from your cart?');
+    
+    if (!confirmClear) return;
+
+    try {
+      const token = getAuthToken();
+
+      if (!token) {
+        alert('Please log in to clear cart');
+        return;
+      }
+
+      console.log('🗑️ Clearing entire cart...');
+
+      const previousItems = [...cartItems];
+      setCartItems([]);
+
+      const response = await fetch('http://localhost:5000/api/cart/deleteAll', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setCartItems(previousItems);
+        throw new Error(errorData.message || 'Failed to clear cart');
+      }
+
+      const data = await response.json();
+      console.log('✅ Cart cleared successfully:', data);
+      
+      alert('All items removed from cart');
+      
+    } catch (error) {
+      console.error('❌ Error clearing cart:', error);
+      alert((error as Error).message || 'Failed to clear cart. Please try again.');
+    }
+  };
+
+  // 5. Add explicit types for function parameters (field: string, value: string)
+  const handleDeliveryInputChange = (field: keyof DeliveryInfoType, value: string) => {
     setDeliveryInfo(prev => ({ ...prev, [field]: value }));
   };
 
   const handleOrderConfirm = async () => {
-    // Get userId from token (you might want to decode JWT properly)
-    const token = localStorage.getItem('authToken') || 
-                 localStorage.getItem('token') || 
-                 localStorage.getItem('accessToken');
+    const token = getAuthToken();
     
     if (!token) {
       alert('Please log in to place an order');
@@ -213,7 +303,7 @@ const CartPage = () => {
       const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
       const formattedItems = cartItems.map(item => ({
         name: item.name,
-        productId: item.id,
+        productId: item.productId,
         customisedProductId: null,
         quantity: item.quantity,
         unitPrice: item.price
@@ -227,10 +317,10 @@ const CartPage = () => {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          subTotal: subtotal,
-          deliverFee: deliveryFee,
-          discount: discountAmount,
-          totalAmount: total,
+          subTotal: orderTotals.subtotal,
+          deliverFee: orderTotals.deliveryFee,
+          discount: orderTotals.discountAmount,
+          totalAmount: orderTotals.total,
           date: new Date(),
           quantity: totalQuantity,
           isBulk: totalQuantity > 500,
@@ -244,54 +334,73 @@ const CartPage = () => {
           alert('Session expired. Please log in again.');
           return;
         }
-        throw new Error(`Order API error! status: ${orderResponse.status}`);
+        const errorData = await orderResponse.json();
+        throw new Error(errorData.message || `Order API error! status: ${orderResponse.status}`);
       }
 
       const orderData = await orderResponse.json();
-      console.log('Order placed:', orderData);
+      console.log('✅ Order placed:', orderData);
+
+      // Extract orderId from response
+      const orderId = orderData.orderId || orderData.order?.orderId;
+      
+      if (!orderId) {
+        console.error('No orderId in response:', orderData);
+        throw new Error('Order placed but no order ID received');
+      }
 
       // Create delivery record
-      const deliveryResponse = await fetch('http://localhost:5000/api/deliveries/create-delivery', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          orderId: orderData.orderId,
-          deliverFee: deliveryFee,
-          customerName: deliveryInfo.fullName,
-          address: deliveryInfo.address,
-          phone: deliveryInfo.phoneNumber,
-          email: deliveryInfo.email || ''
-        })
-      });
+      try {
+        const deliveryResponse = await fetch('http://localhost:5000/api/deliveries/create-delivery', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            orderId: orderId,
+            deliverFee: orderTotals.deliveryFee,
+            customerName: deliveryInfo.fullName,
+            address: deliveryInfo.address,
+            phone: deliveryInfo.phoneNumber,
+            email: deliveryInfo.email || ''
+          })
+        });
 
-      if (!deliveryResponse.ok) {
-        console.error('Failed to create delivery record, but order was placed successfully');
+        if (!deliveryResponse.ok) {
+          console.error('Failed to create delivery record, but order was placed successfully');
+        } else {
+          console.log('✅ Delivery record created');
+        }
+      } catch (deliveryError) {
+        console.error('Error creating delivery record:', deliveryError);
+        // Don't throw - order was successful
       }
 
       // Clear cart (both frontend and backend)
       await clearCart();
+      
+      // Clear delivery info
       setDeliveryInfo({ fullName: '', address: '', phoneNumber: '', email: '' });
-      alert('Order confirmed and delivery scheduled successfully!');
+      
+      // Redirect to invoice page with orderId
+      console.log('🧾 Redirecting to invoice page with orderId:', orderId);
+      router.push(`/Invoice?orderId=${orderId}`);
       
     } catch (error) {
-      console.error('Error placing order:', error);
-      alert('Failed to place order. Please try again.');
+      console.error('❌ Error placing order:', error);
+      alert((error as Error).message || 'Failed to place order. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Clear cart after successful order
+  // Clear cart after successful order (no change needed here)
   const clearCart = async () => {
     try {
-      const token = localStorage.getItem('authToken') || 
-                   localStorage.getItem('token') || 
-                   localStorage.getItem('accessToken');
+      const token = getAuthToken();
 
-      await fetch('http://localhost:5000/api/cart/clear', {
+      await fetch('http://localhost:5000/api/cart/deleteAll', {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -301,6 +410,7 @@ const CartPage = () => {
       setCartItems([]);
     } catch (error) {
       console.error('Error clearing cart:', error);
+      // Don't throw - this shouldn't prevent invoice redirect
     }
   };
 
@@ -315,7 +425,7 @@ const CartPage = () => {
     window.location.assign("/AllProducts")
   };
 
-  // Error state
+  // Error state (no change needed here)
   if (error && !isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
@@ -343,32 +453,36 @@ const CartPage = () => {
   return (
     <div>
       <NavBar />
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center mb-6">
-          <button onClick={handleContinueShopping} className="flex items-center text-gray-700 hover:text-gray-900">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Continue Shopping
-          </button>
-        </div>
-        <hr className="border-gray-300 mb-6" />
-
-        {/* Loading state */}
-        {isLoading ? (
-          <div className="flex justify-center items-center py-16">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-2">Loading cart...</span>
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="max-w-5xl mx-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <button onClick={handleContinueShopping} className="flex items-center text-gray-700 hover:text-gray-900">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Continue Shopping
+            </button>
+            
+            {/* Clear All Cart Button */}
+            {cartItems.length > 0 && (
+              <button 
+                onClick={handleClearAllCart}
+                className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Clear Cart
+              </button>
+            )}
           </div>
-        ) : (
-          <>
-            {/* Shopping Cart Section */}
-            <div className="mb-8">
-              <h2 className="text-lg font-medium text-gray-900 mb-2">Shopping cart</h2>
-              <p className="text-sm text-gray-600 mb-6">
-                You have {cartItems.length} item{cartItems.length !== 1 ? 's' : ''} in your cart
-              </p>
+          <hr className="border-gray-300 mb-6" />
 
+          {/* Loading state */}
+          {isLoading ? (
+            <div className="flex justify-center items-center py-16">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="ml-2">Loading cart...</span>
+            </div>
+          ) : (
+            <>
               {/* Empty cart state */}
               {cartItems.length === 0 ? (
                 <div className="text-center py-16 bg-white rounded-lg">
@@ -378,28 +492,34 @@ const CartPage = () => {
                   </button>
                 </div>
               ) : (
-                <>
-                  {/* Cart Items */}
-                  <div className="space-y-4 mb-8">
-                    {cartItems.map((item) => (
-                      <CartItem
-                        key={item.id}
-                        item={item}
-                        onQuantityChange={handleQuantityChange}
-                        onRemove={handleRemoveItem}
-                        currency="Rs."
-                      />
-                    ))}
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                  {/* Left Side - Cart Items */}
+                  <div className="lg:col-span-3">
+                    <h2 className="text-lg font-medium text-gray-900 mb-2">Shopping cart</h2>
+                    <p className="text-sm text-gray-600 mb-6">
+                      You have {cartItems.length} item{cartItems.length !== 1 ? 's' : ''} in your cart
+                    </p>
+                    <div className="space-y-4">
+                      {cartItems.map((item) => (
+                        <CartItem
+                          key={item.id}
+                          item={item}
+                          onQuantityChange={handleQuantityChange}
+                          onRemove={handleRemoveItem}
+                          currency="Rs."
+                        />
+                      ))}
+                    </div>
                   </div>
 
-                  {/* Main Content Grid */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Right Side - Order Summary and Delivery */}
+                  <div className="lg:col-span-2 space-y-6">
                     <OrderSummary
-                      subtotal={subtotal}
-                      discountPercent={discountPercent}
-                      discountAmount={discountAmount}
-                      deliveryFee={deliveryFee}
-                      total={total}
+                      subtotal={orderTotals.subtotal}
+                      discountPercent={orderTotals.discountPercent}
+                      discountAmount={orderTotals.discountAmount}
+                      deliveryFee={orderTotals.deliveryFee}
+                      total={orderTotals.total}
                       currency="Rs."
                     />
                     <DeliveringTo
@@ -410,16 +530,14 @@ const CartPage = () => {
                       isLoading={isLoading}
                     />
                   </div>
-                </>
+                </div>
               )}
-            </div>
-          </>
-        )}
+            </>
+          )}
+        </div>
       </div>
+      <Footer />
     </div>
-    <Footer />
-    </div>
-
   );
 };
 
