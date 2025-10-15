@@ -23,9 +23,9 @@ const AdminNavBar = () => {
       : pathname.replace("/", "").replace(/^\w/, (c) => c.toUpperCase());
 
   return (
-    <div className="min-h-screen flex">
+    <div className="w-64 lg:min-h-screen">
       {/* Sidebar */}
-      <div className="h-full w-64 bg-[#e6d0a7] flex flex-col justify-between p-4">
+      <div className="h-full w-64 bg-[#e6d0a7] flex flex-col justify-between p-4 fixed left-0 top-0 bottom-0 z-50">
         {/* User Info */}
         <div>
           <div className="flex flex-col items-center mb-6">
@@ -72,8 +72,9 @@ const AdminNavBar = () => {
 
       {/* Top Bar */}
       <div
-        className="h-16 bg-white shadow flex items-center px-6 justify-between fixed top-0 right-0 z-50"
-        style={{ width: "calc(100% - 16rem)", marginLeft: "16rem" }}
+                className="h-16 bg-white shadow flex items-center px-6 justify-between fixed top-0 z-40"
+                // Change style to use 'left' instead of 'marginLeft' and calculated 'width'
+                style={{ left: "16rem", right: 0 }} 
       >
         <h1 className="text-xl font-semibold">{currentPage}</h1>
 
