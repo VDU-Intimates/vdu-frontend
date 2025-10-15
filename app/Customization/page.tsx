@@ -1,16 +1,16 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import Image from 'next/image';
 import * as fabricNS from "fabric";
 
-// The module sometimes appears as { fabric: <API> } and sometimes directly as <API>.
-type FabricAPI = typeof import("fabric"); // the public API (Canvas, Image, etc.)
+// fabric type handling
+type FabricAPI = typeof import("fabric");
 type MaybeWrapped = FabricAPI & { fabric?: FabricAPI };
-
-/** Use fabricNS.fabric if present; otherwise use fabricNS itself — fully typed, no `any`. */
 export const fabric = ((fabricNS as MaybeWrapped).fabric ?? fabricNS) as FabricAPI;
-import { Plus, ShoppingCart, Type, Upload, X, ZoomIn } from 'lucide-react';
+
+import { Plus, ShoppingCart, Type, Upload, X, ZoomIn, Download, DownloadCloud } from 'lucide-react';
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import Buttons from '../components/common-components/button';
@@ -18,11 +18,11 @@ import Footer from '../components/footer/footer';
 import NavBar from '../components/nav-bar/nav-bar';
 import { useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
+import Link from 'next/link';
 
 /* ===========================
    Helpers & Types
 =========================== */
-
 function hasFontFaceSet(d: Document): d is Document & { fonts: FontFaceSet } {
   return typeof (d as Document & Partial<{ fonts: FontFaceSet }>).fonts !== 'undefined';
 }
@@ -71,7 +71,7 @@ type ApiProduct = {
   productName: string;
   description: string;
   price: number;
-  photoUrl: string;
+  photoUrl: string[];
   colors: string[];
   sizes: string[];
   category: 'T-Shirt' | 'Intimate';
@@ -97,7 +97,6 @@ type Design = {
 
 /* ===========================
    OPTIONAL: compose helper
-   (kept as-is, not required for interactions)
 =========================== */
 async function composeDesignOnBase(zonePngUrl: string, baseUrl: string): Promise<string> {
   const tee = await fabric.Image.fromURL(baseUrl, { crossOrigin: 'anonymous' });
@@ -113,7 +112,6 @@ async function composeDesignOnBase(zonePngUrl: string, baseUrl: string): Promise
 
   const zone = await fabric.Image.fromURL(zonePngUrl, { crossOrigin: 'anonymous' });
 
-  // put the design roughly in the upper middle (adjust if needed)
   const chestW = teeW * 0.42;
   const chestH = chestW;
   const left = teeW * 0.5 - chestW / 2;
@@ -134,13 +132,10 @@ async function composeDesignOnBase(zonePngUrl: string, baseUrl: string): Promise
 /* ===========================
    Component
 =========================== */
-
 const CustomizationPage = () => {
-  // internal coordinate system
   const BASE_W = 200;
   const BASE_H = 200;
 
-  // color picker for NEW text
   const [color, setColor] = useState('#255384');
 
   // Refs
@@ -159,7 +154,7 @@ const CustomizationPage = () => {
   const search = useSearchParams();
   const paramId = search.get('id')?.trim() || '';
   const paraSize = search.get('size')?.trim() || '';
-  const paramColor = search.get('color')?.trim() || ''
+  const paramColor = search.get('color')?.trim() || '';
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -168,6 +163,10 @@ const CustomizationPage = () => {
   // Previous designs
   const [designs, setDesigns] = useState<Design[]>([]);
   const [loadingDesigns, setLoadingDesigns] = useState(false);
+
+  // Report filters
+  const [from, setFrom] = useState<string>(""); // YYYY-MM-DD
+  const [to, setTo] = useState<string>("");     // YYYY-MM-DD
 
   /* ---------- auth ---------- */
   useEffect(() => {
@@ -221,7 +220,7 @@ const CustomizationPage = () => {
   }, [paramId]);
 
   const productBg = useMemo(
-    () => product?.photoUrl || '/assets/images/placeholder-tshirt.jpg',
+    () => product?.photoUrl[0] || '/assets/images/placeholder-tshirt.jpg',
     [product?.photoUrl]
   );
 
@@ -233,16 +232,12 @@ const CustomizationPage = () => {
     const zone = zoneRef.current;
     if (!el || !zone) return;
 
-    console.log('[fabric] init canvas', { el, zone });
-
     const canvas = new fabric.Canvas(el);
     fRef.current = canvas;
 
-    // lock internal coords
     canvas.setWidth(BASE_W);
     canvas.setHeight(BASE_H);
 
-    // scale visually only
     const sync = () => {
       const w = Math.max(1, Math.round(zone.clientWidth));
       const h = Math.max(1, Math.round(zone.clientHeight));
@@ -255,12 +250,10 @@ const CustomizationPage = () => {
     const ro = new ResizeObserver(sync);
     ro.observe(zone);
 
-    // make sure the canvas receives events
     (canvas.getElement() as HTMLCanvasElement).style.pointerEvents = 'auto';
     (canvas.getElement() as HTMLCanvasElement).style.zIndex = '10';
 
     return () => {
-      console.log('[fabric] dispose canvas');
       ro.disconnect();
       canvas.dispose();
       fRef.current = null;
@@ -271,23 +264,20 @@ const CustomizationPage = () => {
      Image Handlers
   =========================== */
   const handleAddImage = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('[add-image] input change');
     const canvas = fRef.current;
-    if (!canvas) { console.warn('[add-image] no canvas'); return; }
+    if (!canvas) return;
 
     const file = e.target.files?.[0];
-    if (!file) { console.warn('[add-image] no file selected'); return; }
+    if (!file) return;
 
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = async (ev: ProgressEvent<FileReader>) => {
-      console.log('[add-image] reader loaded');
       const url = ev.target?.result;
-      if (typeof url !== 'string') { console.warn('[add-image] not a data URL'); return; }
+      if (typeof url !== 'string') return;
 
       const img = await fabric.Image.fromURL(url, { crossOrigin: 'anonymous' });
 
-      // fit into internal 200x200 box
       const padding = 0.9;
       const scale = Math.min(
         (BASE_W * padding) / (img.width || BASE_W),
@@ -314,7 +304,6 @@ const CustomizationPage = () => {
 
       canvas.setActiveObject(img);
       canvas.requestRenderAll();
-      console.log('[add-image] added to canvas');
 
       userImagesRef.current.push({ node: img, src: url });
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -322,7 +311,6 @@ const CustomizationPage = () => {
   };
 
   const handleRemoveImage = () => {
-    console.log('[remove-image] clicked');
     const canvas = fRef.current;
     if (!canvas) return;
 
@@ -338,12 +326,11 @@ const CustomizationPage = () => {
      Text Handlers
   =========================== */
   const handleAddText = async () => {
-    console.log('[add-text] clicked');
     const canvas = fRef.current;
-    if (!canvas) { console.warn('[add-text] no canvas'); return; }
+    if (!canvas) return;
 
     const textValue = textInputRef.current?.value?.trim() || '';
-    if (!textValue) { console.warn('[add-text] empty text'); return; }
+    if (!textValue) return;
 
     const fontFamily = fontRef.current?.value || 'Raleway';
     const fontSize = Number(sizeRef.current?.value || 16);
@@ -364,13 +351,11 @@ const CustomizationPage = () => {
     canvas.add(tb);
     canvas.setActiveObject(tb);
     canvas.requestRenderAll();
-    console.log('[add-text] added to canvas');
 
     userTextsRef.current.push(tb);
   };
 
   const handleRemoveText = () => {
-    console.log('[remove-text] clicked');
     const canvas = fRef.current;
     if (!canvas) return;
 
@@ -404,7 +389,6 @@ const CustomizationPage = () => {
      API Calls
   =========================== */
   async function loadDesigns() {
-    console.log('[designs] loading…');
     setLoadingDesigns(true);
     try {
       const res = await fetch(`${API_BASE}/api/designs`, {
@@ -417,29 +401,24 @@ const CustomizationPage = () => {
       }
       const payload = await res.json();
       setDesigns(payload?.data || []);
-      console.log('[designs] loaded', payload?.data?.length ?? 0);
     } catch (e) {
       console.error('[designs] error:', e);
     } finally {
       setLoadingDesigns(false);
     }
   }
-
   useEffect(() => { loadDesigns(); }, []);
 
   async function saveDesign() {
-    console.log('[save] clicked');
     const canvas = fRef.current;
-    if (!canvas) { console.warn('[save] no canvas'); return; }
+    if (!canvas) return;
 
-    // Export the design zone only
     const zonePng = canvas.toDataURL({
       format: 'png',
       multiplier: 3,
       enableRetinaScaling: true,
     });
 
-    // OPTIONAL: composite on base (using product photo when available)
     const base = productBg;
     let designUrl = zonePng;
     try {
@@ -469,7 +448,6 @@ const CustomizationPage = () => {
         const txt = await res.text().catch(() => '');
         throw new Error(`Save failed (${res.status}) ${txt}`);
       }
-      console.log('[save] success');
       toast.success("Design Saved");
       await loadDesigns();
     } catch (e) {
@@ -485,26 +463,24 @@ const CustomizationPage = () => {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       if (!res.ok) throw new Error(`Delete failed (${res.status})`);
-      toast.success("Design Deleted")
+      toast.success("Design Deleted");
       await loadDesigns();
     } catch (e) {
       console.error('[delete] error:', e);
-      toast.error("Error deleting Design")
+      toast.error("Error deleting Design");
     }
   }
 
   async function previewDesign() {
     const canvas = fRef.current;
     if (!canvas) return;
-  
-    // Export the current zone design
+
     const zonePng = canvas.toDataURL({
       format: 'png',
       multiplier: 3,
       enableRetinaScaling: true,
     });
-  
-    // Composite onto the product background (photoUrl or placeholder)
+
     const base = productBg;
     let finalOut = zonePng;
     try {
@@ -512,8 +488,7 @@ const CustomizationPage = () => {
     } catch (e) {
       console.warn('[preview] compose failed, falling back to zone only:', e);
     }
-  
-    // Open preview window with composited design
+
     const win = window.open('', '_blank');
     if (win) {
       win.document.write('<title>Design Preview</title>');
@@ -523,7 +498,9 @@ const CustomizationPage = () => {
       win.document.close();
     }
   }
-  
+
+  // NEW: Download CSV report for my designs
+
 
   /* ===========================
      UI
@@ -533,6 +510,10 @@ const CustomizationPage = () => {
       <NavBar />
 
       <main className="min-h-screen max-md:px-5 mt-10">
+        <div className='flex justify-end px-4 sm:px-6 max-w-[1450px] lg:px-2'>
+          <Link href='/CustomizationReport'><Buttons context="REVIEW REPORT" icon={DownloadCloud}/></Link>
+        </div>
+
         <div className="mx-auto max-w-[1450px] px-4 sm:px-6 lg:px-2 py-6 ">
           <div className="grid gap-10 lg:grid-cols-[2fr_1fr]">
             {/* Left panel */}
@@ -540,9 +521,8 @@ const CustomizationPage = () => {
               <h2 className="text-center mb-10  text-4xl font-bold ">Customize Your Product</h2>
               <div className="mt-6 grid gap-6 xl:grid-cols-2">
                 <div className="flex flex-col items-center">
-                  {/* Background IMAGE behind, canvas zone above */}
+                  {/* Background IMAGE + canvas zone */}
                   <div className="relative mx-auto w-full max-w-[500px] aspect-[3/4] overflow-hidden rounded-2xl shadow-inner">
-                    {/* product image (z-0, no pointer events) */}
                     <Image
                       src={productBg}
                       alt={product?.productName || 'Product'}
@@ -552,7 +532,6 @@ const CustomizationPage = () => {
                       draggable={false}
                     />
 
-                    {/* Chest drop zone – responsive, above image */}
                     <div
                       ref={zoneRef}
                       className="
@@ -574,7 +553,7 @@ const CustomizationPage = () => {
                     </div>
                   </div>
 
-                  {/* Save & Preview */}
+                  {/* Save / Preview */}
                   <div className="flex items-center justify-center gap-10 mt-5">
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -617,16 +596,12 @@ const CustomizationPage = () => {
 
                   <div>
                     <h2 className="text-xl font-bold text-black">Selected Size</h2>
-                    <p className="text-black/70 font-semibold">
-                      {paraSize}
-                    </p>
+                    <p className="text-black/70 font-semibold">{paraSize}</p>
                   </div>
 
                   <div>
                     <h2 className="text-xl font-bold text-black">Selected Color</h2>
-                    <p className="text-black/70 font-semibold">
-                      {paramColor}
-                    </p>
+                    <p className="text-black/70 font-semibold">{paramColor}</p>
                   </div>
 
                   {/* Add Image */}
@@ -706,7 +681,7 @@ const CustomizationPage = () => {
                   </div>
 
                   {/* Cart Button (optional wiring) */}
-                  <div className="flex justify-end mt-20 text-sm">
+                  <div className="flex justify-end mt-6 text-sm">
                     <Buttons context="ADD TO CART" icon={ShoppingCart} productId={product?.productId} size={paraSize}/>
                   </div>
                 </div>

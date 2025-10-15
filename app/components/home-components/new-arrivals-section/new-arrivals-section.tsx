@@ -13,8 +13,9 @@ type ApiProduct = {
   productId: string;
   productName: string;
   description: string;
+  sizes?: string[];
   price: number;
-  photoUrl: string;
+  photoUrl: string[];
   category: string;
 };
 
@@ -79,7 +80,7 @@ const NewArrivals = () => {
             >
               <div className="relative aspect-[4/5] w-full">
                 <Image
-                  src={p.photoUrl || "/assets/images/placeholder-tshirt.jpg"}
+                  src={p.photoUrl[0] || "/assets/images/placeholder-tshirt.jpg"}
                   alt={p.productName}
                   fill
                   className="object-cover"
@@ -90,6 +91,7 @@ const NewArrivals = () => {
               <div className="p-4 flex flex-col gap-2">
                 <h3 className="font-semibold line-clamp-2">{p.productName}</h3>
                 <p className="text-gray-500 text-sm">{p.category}</p>
+                <p className="text-gray-500 text-sm">{p.sizes?.[0]}</p>
                 <p className="font-bold text-lg">Rs.{p.price}</p>
 
                 <div className="flex gap-2 mt-3">
@@ -99,6 +101,7 @@ const NewArrivals = () => {
                     productId={p.productId}
                     // if you need a size here, pass default from p.sizes?.[0]
                     className="w-full"
+                    size={p.sizes?.[0]}
                   />
                   <Link href={`/ProductDetail?id=${encodeURIComponent(p.productId)}`}>
                     <Buttons

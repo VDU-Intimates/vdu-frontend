@@ -22,7 +22,7 @@ export default function NumberStepper({ value, onChange, min, max }: NumberStepp
   }, [value, isEditing]);
 
   const updateQuantity = (newValue: number) => {
-    let finalValue = Math.max(min, Math.min(max, newValue));
+    const finalValue = Math.max(min, Math.min(max, newValue));
     setLocalValue(finalValue);
     onChange(finalValue); // Propagate change up to CartItem -> CartPage
   };

@@ -21,7 +21,7 @@ type BestProduct = {
   productId: string;
   productName: string;
   price: number;
-  photoUrl: string;
+  photoUrl: string[];
   category: string;
   sizes: string[];
   rating?: number;     // optional, for stars
@@ -51,7 +51,7 @@ function BestSellingCard({ p }: { p: BestProduct }) {
     <div className="w-full min-w-0 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300">
       <div className="relative aspect-[4/3] w-full overflow-hidden rounded-t-2xl">
         <Image
-          src={p.photoUrl || "/assets/images/placeholder-tshirt.jpg"}
+          src={p.photoUrl[0] || "/assets/images/placeholder-tshirt.jpg"}
           alt={p.productName}
           fill
           className="object-cover"

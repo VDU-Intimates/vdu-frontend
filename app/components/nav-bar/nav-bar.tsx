@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import SearchBar from "../common-components/search-bar";
@@ -36,17 +36,17 @@ function getToken(): string {
 const NavBar = () => {
   const pathname = usePathname();
 
-  const newArrivalItems = ["Men", "Women", "Kids"];
-  const otherItems = ["Undergarment", "Casual Wear", "Night Wear"];
-
+  
   const [openTop, setOpenTop] = useState(false);
-  const [openBottom, setOpenBottom] = useState(false);
-  const bottomScrollRef = useRef<HTMLDivElement | null>(null);
-
-  const [dropdownA, setDropdownA] = useState(false);
-  const [dropdownB, setDropdownB] = useState(false);
-  const [dropdownC, setDropdownC] = useState(false);
-  const [dropdownD, setDropdownD] = useState(false);
+  
+  // const newArrivalItems = ["Men", "Women", "Kids"];
+  // const otherItems = ["Undergarment", "Casual Wear", "Night Wear"];
+  // const bottomScrollRef = useRef<HTMLDivElement | null>(null);
+  // const [openBottom, setOpenBottom] = useState(false);
+  // const [dropdownA, setDropdownA] = useState(false);
+  // const [dropdownB, setDropdownB] = useState(false);
+  // const [dropdownC, setDropdownC] = useState(false);
+  // const [dropdownD, setDropdownD] = useState(false);
 
   // Auth state
   const [currentUser, setCurrentUser] = useState<ApiUser | null>(null);
@@ -61,15 +61,15 @@ const NavBar = () => {
   // const [saving, setSaving] = useState(false);
 
   // Reset bottom scroller when opened
-  useEffect(() => {
-    if (openBottom && bottomScrollRef.current) {
-      try {
-        bottomScrollRef.current.scrollTo({ left: 0, behavior: "auto" });
-      } catch {
-        bottomScrollRef.current.scrollLeft = 0;
-      }
-    }
-  }, [openBottom]);
+  // useEffect(() => {
+  //   if (openBottom && bottomScrollRef.current) {
+  //     try {
+  //       bottomScrollRef.current.scrollTo({ left: 0, behavior: "auto" });
+  //     } catch {
+  //       bottomScrollRef.current.scrollLeft = 0;
+  //     }
+  //   }
+  // }, [openBottom]);
 
   // --- KEY PART: (Re)load user whenever:
   //  - the component mounts
@@ -229,7 +229,7 @@ const NavBar = () => {
               </button>
 
               {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-56 rounded-xl border z-[1000] border-black/5 bg-white shadow-lg p-1 text-sm">
+                <div className="absolute flex flex-col right-0 mt-2 w-56 rounded-xl border z-[1000] border-black/5 bg-white shadow-lg p-1 text-sm">
                   <Link
                     href="/OrderHistory"
                     className="block rounded-lg px-3 py-2 hover:bg-neutral-50"
@@ -248,16 +248,22 @@ const NavBar = () => {
                   >
                     Account management
                   </Link>
-                  <div className="my-1 border-t border-neutral-200" />
-                  <button
-                    onClick={() => {
-                      handleSignOut();
-                      // no event needed to leave things simple
-                    }}
-                    className="w-full text-left rounded-lg px-3 py-2 text-red-600 hover:bg-red-50"
+                  <Link
+                    href="/CustomizationReport"
+                    className="w-full text-left rounded-lg px-3 py-2 hover:bg-neutral-50"
                   >
-                    Sign out
-                  </button>
+                    Design Reports
+                  </Link>
+                  <div className="my-1 border-t border-neutral-200" />
+                    <button
+                      onClick={() => {
+                        handleSignOut();
+                        // no event needed to leave things simple
+                      }}
+                      className="w-full text-left rounded-lg px-3 py-2 text-red-600 hover:bg-red-50"
+                    >
+                      Sign out
+                    </button>
                 </div>
               )}
             </div>
@@ -289,7 +295,7 @@ const NavBar = () => {
       </div>
 
       {/* Bottom Navbar */}
-      <div className="flex items-center relative justify-start w-screen gap-4 sm:gap-6 md:gap-10 px-4 sm:px-6 md:px-10 text-l ">
+      {/* <div className="flex items-center relative justify-start w-screen gap-4 sm:gap-6 md:gap-10 px-4 sm:px-6 md:px-10 text-l ">
         {!openBottom && (
           <button
             aria-label="Open menu"
@@ -324,7 +330,7 @@ const NavBar = () => {
             </button>
           )}
 
-          {/* New Arrivals */}
+          New Arrivals
           <div className="flex flex-col pr-10 items-center relative shrink min-w-0 w-36 max-md:min-w-[9.5rem] md:w-auto min-[800px]:flex-1 min-[800px]:basis-0 min-[800px]:min-w-0 gap-1 sm:gap-2">
             <div
               className="flex gap-2 cursor-pointer select-none items-center h-8 sm:h-9 md:h-10"
@@ -373,7 +379,7 @@ const NavBar = () => {
             </ul>
           </div>
 
-          {/* Men */}
+          Men
           <div className="flex flex-col pr-10 items-center relative shrink-0 w-36 md:w-40 max-[800px]:min-w-[9.5rem] min-[800px]:w-auto min-[800px]:flex-1 min-[800px]:basis-0 min-[800px]:min-w-0 min-[800px]:shrink gap-1 sm:gap-2 ">
             <div
               className="flex gap-2 cursor-pointer select-none items-center h-8 sm:h-9 md:h-10"
@@ -419,7 +425,7 @@ const NavBar = () => {
             </ul>
           </div>
 
-          {/* Women */}
+          Women
           <div className="flex flex-col pr-10 items-center relative shrink-0 w-36 md:w-40 max-[800px]:min-w-[9.5rem] min-[800px]:w-auto min-[800px]:flex-1 min-[800px]:basis-0 min-[800px]:min-w-0 min-[800px]:shrink gap-1 sm:gap-2">
             <div
               className="flex gap-2 cursor-pointer select-none items-center h-8 sm:h-9 md:h-10"
@@ -465,7 +471,7 @@ const NavBar = () => {
             </ul>
           </div>
 
-          {/* Kids */}
+          Kids
           <div className="flex flex-col pr-10 items-center relative shrink-0 w-36 md:w-40 max-[800px]:min-w-[9.5rem] min-[800px]:w-auto min-[800px]:flex-1 min-[800px]:basis-0 min-[800px]:min-w-0 min-[800px]:shrink gap-1 sm:gap-2">
             <div
               className="flex gap-2 cursor-pointer select-none items-center h-8 sm:h-9 md:h-10"
@@ -511,7 +517,7 @@ const NavBar = () => {
             </ul>
           </div>
         </div>
-      </div>
+      </div> */}
     </nav>
   );
 };
