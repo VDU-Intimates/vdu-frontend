@@ -5,13 +5,13 @@ import React, { useEffect, useState } from "react";
 import Buttons from "../common-components/button";
 import Link from "next/link";
 
-const API_BASE = "http://localhost:5000"; // adjust if needed
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 
 export type CardProduct = {
   productId: string;
   productName: string;
   price: number;
-  photoUrl: string;
+  photoUrl: string[]; // ← now supports multiple images
   category: string;
   sizes: string[];
   rating?: number;
@@ -27,7 +27,7 @@ const ProductCard = () => {
         const res = await fetch(`${API_BASE}/api/products`);
         if (!res.ok) throw new Error("Failed to fetch products");
         const data = await res.json();
-        setProducts(data.data); // assumes your backend returns an array
+        setProducts(data.data); // assumes your backend returns array in `data`
       } catch (err) {
         console.error("Error loading products:", err);
       } finally {
@@ -59,7 +59,13 @@ const ProductCard = () => {
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {products.map((p) => {
         const priceText = Number.isFinite(p.price) ? `Rs.${p.price}` : "—";
-        const defaultSize = p.sizes?.[0] || "M"; // pick first available size
+        const defaultSize = p.sizes?.[0] || "M";
+
+        // ✅ Choose main image (first in array) or fallback placeholder
+        const mainImage =
+          Array.isArray(p.photoUrl) && p.photoUrl.length > 0
+            ? p.photoUrl[0]
+            : "/assets/images/placeholder-tshirt.jpg";
 
         return (
           <div
@@ -68,7 +74,7 @@ const ProductCard = () => {
           >
             <div className="relative aspect-[4/3] w-full overflow-hidden rounded-t-2xl">
               <Image
-                src={p.photoUrl || "/assets/images/placeholder-tshirt.jpg"}
+                src={mainImage}
                 alt={p.productName}
                 fill
                 className="object-cover"
@@ -82,8 +88,9 @@ const ProductCard = () => {
                 <span className="font-semibold text-gray-900 whitespace-nowrap">{priceText}</span>
               </div>
 
-              <p className="mt-1 text-sm text-gray-700"> {p.category}</p>
-              <p className="mt-1 text-sm text-gray-700"> {defaultSize}</p>
+              <p className="mt-1 text-sm text-gray-700">{p.category}</p>
+              <p className="mt-1 text-sm text-gray-700">{defaultSize}</p>
+
               <div className="mt-2">
                 <Stars value={p.rating ?? 0} />
               </div>

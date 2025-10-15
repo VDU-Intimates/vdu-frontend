@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -8,15 +7,19 @@ import {
   PackagePlus,
   PencilLine,
   Trash2,
+  ArrowUp,
+  X,
+  Plus as PlusIcon,
+  Check,
 } from "lucide-react";
 import AdminNavBar from "@/app/components/nav-bar/admin-nav-bar";
 import Buttons from "@/app/components/common-components/button";
+import toast from "react-hot-toast";
 
 /* =========================
-   Config & Helpers
+   Config & helpers
 ========================= */
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:5000";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:5000";
 
 function getErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -35,41 +38,50 @@ function getToken(): string | null {
   }
 }
 
+async function readFilesAsDataUrls(files: File[], cap = 5): Promise<string[]> {
+  const picked = files.slice(0, cap);
+  const urls: string[] = [];
+  for (const f of picked) {
+    if (!f.type.startsWith("image/")) continue;
+    const url = await new Promise<string>((resolve) => {
+      const rd = new FileReader();
+      rd.onload = () => resolve(String(rd.result || ""));
+      rd.readAsDataURL(f);
+    });
+    urls.push(url);
+  }
+  return urls;
+}
+
 /* =========================
-   Types (UI vs API)
+   Types
 ========================= */
-// UI type (now includes colors/sizes for creation)
 type UIProduct = {
   _id?: string;
-  productId?: string; // productId from backend
-  name: string; // productName
+  productId?: string;
+  name: string;
   description: string;
-  category: "T-Shirt" | "Intimate"; // UI categories
+  category: "T-Shirt" | "Intimate";
   price: number;
-  image: string; // photoUrl (can be base64 or URL)
+  images: string[]; // main = index 0
   colors?: string[];
   sizes?: string[];
-  stock: number; // UI-only
+  stock: number;
 };
 
-// Backend product (subset, matches your model)
 type ApiProduct = {
   _id?: string;
   productId?: string;
   productName: string;
   description: string;
   price: number;
-  photoUrl: string;
+  photoUrl: string[]; // backend array
   colors: string[];
   sizes: string[];
   category: "T-Shirt" | "Intimate";
   stock: number;
 };
 
-/* =========================
-   Adapters
-========================= */
-// backend -> UI
 function apiToUI(p: ApiProduct): UIProduct {
   return {
     _id: p._id,
@@ -78,27 +90,24 @@ function apiToUI(p: ApiProduct): UIProduct {
     description: p.description,
     category: p.category === "Intimate" ? "Intimate" : "T-Shirt",
     price: p.price,
-    image: p.photoUrl,
+    images: Array.isArray(p.photoUrl) ? p.photoUrl : [],
     colors: p.colors ?? [],
     sizes: p.sizes ?? [],
     stock: p.stock,
   };
 }
 
-// UI -> backend
 function uiToApi(p: UIProduct): Partial<ApiProduct> {
-  const colors = (p.colors ?? []).filter(Boolean);
-  const sizes = (p.sizes ?? []).filter(Boolean);
   return {
-    productId: p.productId, // optional
+    productId: p.productId,
     productName: p.name,
     description: p.description,
     price: Number(p.price),
-    photoUrl: p.image, // can be base64 data URL or hosted URL
-    colors: colors.length ? colors : ["default"], // keep backend validator happy
-    sizes: sizes.length ? sizes : ["M"],
-    category: p.category === "T-Shirt" ? "T-Shirt" : "Intimate",
-    stock:p.stock
+    photoUrl: (p.images ?? []).slice(0, 5),
+    colors: (p.colors ?? []).filter(Boolean).length ? (p.colors ?? []).filter(Boolean) : ["default"],
+    sizes: (p.sizes ?? []).filter(Boolean).length ? (p.sizes ?? []).filter(Boolean) : ["M"],
+    category: p.category,
+    stock: Math.max(0, Number(p.stock) || 0),
   };
 }
 
@@ -111,43 +120,39 @@ type View = "add" | "update" | "all";
    Page
 ========================= */
 export default function InventoryPage() {
-
-  async function downloadCsv() {
-    try {
-      // If you add filters, build a query string here to pass along.
-      const url = `${API_BASE}/api/admin/products/report`;
-      const res = await fetch(url, {
-        // if you want it protected:
-        // headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : undefined
-      });
-      if (!res.ok) throw new Error(`Download failed (${res.status})`);
-      const blob = await res.blob();
-      const urlObj = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = urlObj;
-      const d = new Date();
-      const day = String(d.getDate()).padStart(2, '0');
-      const month = String(d.getMonth() + 1).padStart(2, '0'); // 01-12
-      const year = d.getFullYear();
-      const hours = String(d.getHours()).padStart(2, "0");
-      const minutes = String(d.getMinutes()).padStart(2, "0");
-      const dt = `${day}-${month}-${year}-${hours}-${minutes}`;
-      a.download = `inventory-report-${dt}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(urlObj);
-    } catch (e) {
-      alert(`Failed to download report: ${e instanceof Error ? e.message : String(e)}`);
-    }
-  }
-
   const [view, setView] = useState<View>("all");
   const [products, setProducts] = useState<UIProduct[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // LOAD
+  // Download CSV report
+  async function downloadCsv() {
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/products/report`);
+      if (!res.ok) throw new Error(`Download failed (${res.status})`);
+      const blob = await res.blob();
+      const urlObj = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = urlObj;
+
+      const d = new Date();
+      const day = String(d.getDate()).padStart(2, "0");
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const year = d.getFullYear();
+      const hours = String(d.getHours()).padStart(2, "0");
+      const minutes = String(d.getMinutes()).padStart(2, "0");
+      a.download = `inventory-report-${day}-${month}-${year}-${hours}-${minutes}.csv`;
+
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(urlObj);
+    } catch (e) {
+      alert(`Failed to download report: ${getErrorMessage(e)}`);
+    }
+  }
+
+  // Load products
   useEffect(() => {
     (async () => {
       try {
@@ -168,16 +173,14 @@ export default function InventoryPage() {
 
   return (
     <div className="flex min-h-screen font-poppins bg-[#f4efe4]">
-      {/* Sidebar (fixed) */}
       <AdminNavBar />
-
-      {/* Main */}
       <main className="flex-1 p-8">
         <div className="flex justify-end mt-15 mb-5">
           <Buttons context="Download Report" icon={Download} onClick={downloadCsv} />
         </div>
+
         <div className="flex items-center justify-center mb-6">
-          <div className="flex gap-7 ">
+          <div className="flex gap-7">
             <ToolbarButton
               active={view === "all"}
               label="All product"
@@ -196,11 +199,9 @@ export default function InventoryPage() {
               icon={<PencilLine className="w-4 h-4" />}
               onClick={() => setView("update")}
             />
-            
           </div>
         </div>
 
-        {/* Center panel */}
         <section className="transition-all">
           {loading ? (
             <div className="bg-white rounded-xl p-6 shadow">Loading…</div>
@@ -222,8 +223,10 @@ export default function InventoryPage() {
                   if (!res.ok) throw new Error(`Create failed (${res.status})`);
                   const created: ApiProduct = await res.json();
                   setProducts((prev) => [apiToUI(created), ...prev]);
+                  setView("all");
+                  toast.success("New Product Added");
                 } catch (e: unknown) {
-                  alert(getErrorMessage(e) || "Failed to create");
+                  toast.error(getErrorMessage(e) ||"Failed to create");
                 }
               }}
             />
@@ -233,7 +236,7 @@ export default function InventoryPage() {
               onUpdated={async (ui) => {
                 try {
                   if (!ui._id && !ui.productId) {
-                    alert("Missing product id");
+                    toast.error("Missing product id");
                     return;
                   }
                   const token = getToken();
@@ -249,11 +252,10 @@ export default function InventoryPage() {
                   if (!res.ok) throw new Error(`Update failed (${res.status})`);
                   const saved: ApiProduct = await res.json();
                   const mapped = apiToUI(saved);
-                  setProducts((prev) =>
-                    prev.map((p) => (p._id === mapped._id ? mapped : p))
-                  );
+                  setProducts((prev) => prev.map((p) => (p._id === mapped._id ? mapped : p)));
+                  toast.success("Product updated");
                 } catch (e: unknown) {
-                  alert(getErrorMessage(e) || "Failed to update");
+                  toast.error(getErrorMessage(e) || "Failed to update");
                 }
               }}
               onDelete={async (ui) => {
@@ -268,8 +270,9 @@ export default function InventoryPage() {
                   });
                   if (!res.ok) throw new Error(`Delete failed (${res.status})`);
                   setProducts((prev) => prev.filter((p) => p._id !== ui._id));
+                  toast.success("Product deleted");
                 } catch (e: unknown) {
-                  alert(getErrorMessage(e) || "Failed to delete");
+                  toast.error(getErrorMessage(e) || "Failed to delete");
                 }
               }}
             />
@@ -302,7 +305,7 @@ function ToolbarButton({
     <button
       onClick={onClick}
       className={[
-        "p-7 shadow-sm border font-bold rounded-xl transition",
+        "p-7 shadow-sm border font-bold cursor-pointer rounded-xl transition",
         active ? "bg-[#e8f0db] text-[#5f6f46] border-[#a7b78a]" : "bg-white border-gray-200",
         danger ? "text-red-600 border-red-200" : "",
         "hover:shadow",
@@ -317,7 +320,7 @@ function ToolbarButton({
 }
 
 /* =========================
-   Add New Product (with upload + multiselect)
+   Add New Product (multi-image)
 ========================= */
 const AVAILABLE_COLORS = ["white", "black", "red", "blue", "green"];
 const AVAILABLE_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
@@ -329,36 +332,41 @@ function AddNewProduct({ onCreated }: { onCreated: (p: UIProduct) => Promise<voi
     category: "T-Shirt",
     price: 0,
     stock: 0,
-    image:
-      "/assets/images/team.png",
+    images: [],
     colors: [],
     sizes: [],
   });
 
-  // ----- image upload (preview with base64 data URL) -----
-  async function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      alert("Please select an image file.");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = String(reader.result || "");
-      setForm((f) => ({ ...f, image: dataUrl }));
-    };
-    reader.readAsDataURL(file); // base64 preview
-  }
-  function removeImage() {
-    setForm((f) => ({
-      ...f,
-      image:
-        "https://images.unsplash.com/photo-1563245372-f21724e3856d?q=80&w=640&auto=format&fit=crop",
-    }));
+  // file input key trick to clear the input (instead of touching input.value)
+  const [fileKey, setFileKey] = useState<number>(Date.now());
+
+  async function onPickImages(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.currentTarget.files ?? []);
+    if (!files.length) return;
+    const urls = await readFilesAsDataUrls(files, 5);
+
+    setForm((f) => {
+      const next = (f.images || []).concat(urls).slice(0, 5);
+      return { ...f, images: next };
+    });
+
+    // reset input by changing key
+    setFileKey(Date.now());
   }
 
-  // ----- checkbox handlers -----
+  function removeImageAt(idx: number) {
+    setForm((f) => ({ ...f, images: (f.images || []).filter((_, i) => i !== idx) }));
+  }
+
+  function promoteToMain(idx: number) {
+    setForm((f) => {
+      const arr = [...(f.images || [])];
+      const [sp] = arr.splice(idx, 1);
+      arr.unshift(sp);
+      return { ...f, images: arr };
+    });
+  }
+
   function toggleColor(color: string) {
     setForm((f) => {
       const has = (f.colors ?? []).includes(color);
@@ -366,6 +374,7 @@ function AddNewProduct({ onCreated }: { onCreated: (p: UIProduct) => Promise<voi
       return { ...f, colors: next };
     });
   }
+
   function toggleSize(size: string) {
     setForm((f) => {
       const has = (f.sizes ?? []).includes(size);
@@ -379,7 +388,7 @@ function AddNewProduct({ onCreated }: { onCreated: (p: UIProduct) => Promise<voi
     form.price > 0 &&
     (form.colors?.length ?? 0) > 0 &&
     (form.sizes?.length ?? 0) > 0 &&
-    !!form.image;
+    (form.images?.length ?? 0) > 0;
 
   const handleCreate = async () => {
     await onCreated(form);
@@ -389,12 +398,14 @@ function AddNewProduct({ onCreated }: { onCreated: (p: UIProduct) => Promise<voi
       category: "T-Shirt",
       price: 0,
       stock: 0,
-      image:
-        "https://images.unsplash.com/photo-1563245372-f21724e3856d?q=80&w=640&auto=format&fit=crop",
+      images: [],
       colors: [],
       sizes: [],
     });
+    setFileKey(Date.now());
   };
+
+  const mainImage = form.images[0] || "/assets/images/team.png";
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_440px] gap-8">
@@ -402,7 +413,6 @@ function AddNewProduct({ onCreated }: { onCreated: (p: UIProduct) => Promise<voi
       <div className="bg-white rounded-2xl shadow p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Add New Product</h2>
-          <button className="text-gray-500 hover:text-black">✕</button>
         </div>
 
         <label className="block text-sm font-medium">Product Name</label>
@@ -424,7 +434,7 @@ function AddNewProduct({ onCreated }: { onCreated: (p: UIProduct) => Promise<voi
 
         <label className="block text-sm font-medium mb-2">Category</label>
         <div className="flex gap-3 mb-6">
-          {(["T-Shirt","Intimate"] as const).map((c) => (
+          {(["T-Shirt", "Intimate"] as const).map((c) => (
             <button
               key={c}
               className={[
@@ -433,36 +443,89 @@ function AddNewProduct({ onCreated }: { onCreated: (p: UIProduct) => Promise<voi
               ].join(" ")}
               onClick={() => setForm((f) => ({ ...f, category: c }))}
             >
-              {c === "Intimate" ? "Intimate" : "T-Shirt"}
+              {c}
             </button>
           ))}
         </div>
 
-        {/* Image upload */}
+        {/* Multiple image upload (max 5) */}
         <div className="mb-6">
-          <label className="block text-sm font-medium mb-2">Product Image</label>
-          <div className="flex items-center gap-3">
-            <label className="px-3 py-2 rounded-lg border bg-white inline-flex items-center gap-2 cursor-pointer">
-              <PencilLine className="w-4 h-4" />
-              <span>ADD IMAGE</span>
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={onPickImage}
-              />
-            </label>
-            <button
-              type="button"
-              onClick={removeImage}
-              className="px-3 py-2 rounded-lg border border-red-300 text-red-600 bg-white"
-            >
-              REMOVE
-            </button>
-          </div>
-        </div>
+  <label className="block text-sm font-medium mb-2">Product Images (max 5)</label>
+  <div className="flex items-center gap-3">
+    <label className="px-3 py-2 rounded-lg border bg-white inline-flex items-center gap-2 cursor-pointer">
+      <PencilLine className="w-4 h-4" />
+      <span>ADD IMAGES</span>
+      <input
+        key={fileKey}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={onPickImages}
+      />
+    </label>
+  </div>
 
-        {/* Colors multi-select */}
+  {form.images.length > 0 && (
+    <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+      {form.images.map((src, i) => {
+        const isMain = i === 0;
+        return (
+          <div
+            key={i}
+            className={[
+              "relative rounded-md overflow-hidden border transition-all",
+              isMain
+                ? "border-emerald-600 ring-2 ring-emerald-400 shadow-[0_0_0_3px_rgba(16,185,129,0.15)]"
+                : "border-gray-300 hover:border-gray-400"
+            ].join(" ")}
+          >
+            {/* MAIN badge */}
+            {isMain && (
+              <span className="absolute left-1 top-1 z-10 rounded-sm bg-emerald-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow">
+                Main
+              </span>
+            )}
+
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={src}
+              alt={`img-${i}`}
+              className={`w-full h-24 object-cover ${isMain ? "opacity-100" : "opacity-95 hover:opacity-100"}`}
+            />
+
+            <div className="absolute inset-x-0 bottom-0 flex justify-between gap-1 p-1 bg-white/90">
+              {!isMain ? (
+                <button
+                  title="Set as main"
+                  className="px-2 py-1 text-[11px] border rounded  cursor-pointer hover:bg-white inline-flex items-center gap-1"
+                  onClick={() => promoteToMain(i)}
+                >
+                  <ArrowUp className="w-3 h-3" /> Main
+                </button>
+              ) : (
+                <span className="px-2 py-1 text-[11px] border border-emerald-500 bg-emerald-50 text-emerald-700 rounded">
+                  Selected
+                </span>
+              )}
+
+              <button
+                title="Remove"
+                className="px-2 py-1 text-[11px] border cursor-pointer  border-red-300 hover:bg-red-200 text-red-600 rounded inline-flex items-center gap-1"
+                onClick={() => removeImageAt(i)}
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  )}
+</div>
+
+
+        {/* Colors */}
         <div className="mb-6">
           <label className="block text-sm font-medium mb-2">Colors</label>
           <div className="flex flex-wrap gap-3">
@@ -489,7 +552,7 @@ function AddNewProduct({ onCreated }: { onCreated: (p: UIProduct) => Promise<voi
           </div>
         </div>
 
-        {/* Sizes multi-select */}
+        {/* Sizes */}
         <div className="mb-6">
           <label className="block text-sm font-medium mb-2">Sizes</label>
           <div className="flex flex-wrap gap-3">
@@ -516,48 +579,54 @@ function AddNewProduct({ onCreated }: { onCreated: (p: UIProduct) => Promise<voi
           </div>
         </div>
 
+        {/* Stock & Price */}
         <label className="block text-sm font-medium">Stock</label>
         <input
           type="number"
           className="mt-1 mb-6 w-full rounded border p-2"
-          value={form.stock || ""}
-          onChange={(e) => setForm((f) => ({ ...f, stock: Number(e.target.value || 0) }))}
-          placeholder="Stock"
+          value={form.stock || 0}
+          onChange={(e) =>
+            setForm((f) => ({ ...f, stock: Math.max(0, Number(e.target.value) || 0) }))
+          }
         />
 
         <label className="block text-sm font-medium">Price</label>
         <input
           type="number"
           className="mt-1 mb-6 w-full rounded border p-2"
-          value={form.price || ""}
-          onChange={(e) => setForm((f) => ({ ...f, price: Number(e.target.value || 0) }))}
-          placeholder="Min Price"
+          value={form.price || 0}
+          onChange={(e) => setForm((f) => ({ ...f, price: Number(e.target.value) || 0 }))}
         />
 
         <div className="flex gap-3">
           <Buttons context="ADD NEW PRODUCT" disabled={!canCreate} onClick={handleCreate} />
-          <Buttons context="RESET" onClick={() =>
+          <Buttons
+            context="RESET"
+            combo="redTransparent"
+            className="px-10"
+            onClick={() => {
               setForm({
                 name: "",
                 description: "",
                 category: "T-Shirt",
                 price: 0,
                 stock: 0,
-                image:
-                  "https://images.unsplash.com/photo-1563245372-f21724e3856d?q=80&w=640&auto=format&fit=crop",
+                images: [],
                 colors: [],
                 sizes: [],
-              })
-            } combo="redTransparent" className="px-10"/>
+              });
+              setFileKey(Date.now());
+            }}
+          />
         </div>
       </div>
 
-      {/* Right: Preview */}
+      {/* Right: Preview (main image only) */}
       <div className="bg-[#e1e6cc] rounded-2xl p-6">
         <h3 className="text-lg font-semibold underline mb-3">Product Card Preview</h3>
         <div className="w-full aspect-[4/3] relative mb-4 rounded-lg overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={form.image} alt={form.name || "preview"} className="w-full h-full object-cover" />
+          <img src={mainImage} alt={form.name || "preview"} className="w-full h-full object-cover" />
         </div>
         <dl className="grid gap-2 text-md">
           <div className="grid grid-cols-[200px_1fr]">
@@ -570,7 +639,7 @@ function AddNewProduct({ onCreated }: { onCreated: (p: UIProduct) => Promise<voi
           </div>
           <div className="grid grid-cols-[200px_1fr]">
             <dt className="font-semibold">Category</dt>
-            <dd>{form.category === "T-Shirt" ? "T-Shirt" : `${form.category}`}</dd>
+            <dd>{form.category}</dd>
           </div>
           <div className="grid grid-cols-[200px_1fr]">
             <dt className="font-semibold">Colors</dt>
@@ -582,7 +651,7 @@ function AddNewProduct({ onCreated }: { onCreated: (p: UIProduct) => Promise<voi
           </div>
           <div className="grid grid-cols-[200px_1fr]">
             <dt className="font-semibold">Stock</dt>
-            <dd> {form.stock || 0}</dd>
+            <dd>{form.stock || 0}</dd>
           </div>
           <div className="grid grid-cols-[200px_1fr]">
             <dt className="font-semibold">Price</dt>
@@ -595,7 +664,7 @@ function AddNewProduct({ onCreated }: { onCreated: (p: UIProduct) => Promise<voi
 }
 
 /* =========================
-   Update Product (unchanged logic)
+   Update Product 
 ========================= */
 function UpdateProduct({
   items,
@@ -607,7 +676,6 @@ function UpdateProduct({
   onDelete: (p: UIProduct) => Promise<void>;
 }) {
   const [selected, setSelected] = useState<UIProduct | null>(items[0] ?? null);
-
   useEffect(() => {
     if (!selected && items.length) setSelected(items[0]);
   }, [items, selected]);
@@ -616,12 +684,7 @@ function UpdateProduct({
     <div className="bg-white rounded-2xl shadow overflow-hidden">
       <div className="p-4 flex items-center justify-between">
         <h3 className="font-semibold">Inventory List</h3>
-        <div className="text-sm text-gray-600 flex items-center gap-6">
-          <button className="hover:underline">Sort by ↓</button>
-          <button className="hover:underline">View all</button>
-        </div>
       </div>
-
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-[#ece8de] text-left">
@@ -637,6 +700,7 @@ function UpdateProduct({
           <tbody>
             {items.map((p) => {
               const active = selected?._id === p._id;
+              const main = p.images?.[0] || "/assets/images/team.png";
               return (
                 <tr
                   key={p._id ?? p.productId}
@@ -645,7 +709,7 @@ function UpdateProduct({
                 >
                   <td className="p-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.image} className="w-12 h-12 rounded object-cover" alt={p.name} />
+                    <img src={main} className="w-12 h-12 rounded object-cover" alt={p.name} />
                   </td>
                   <td className="p-3">{p.productId ?? "—"}</td>
                   <td className="p-3">{p.name}</td>
@@ -661,15 +725,38 @@ function UpdateProduct({
     </div>
   );
 
+  const [fileKey, setFileKey] = useState<number>(Date.now());
+
+  async function addImages(files: File[]) {
+    if (!selected) return;
+    const remain = Math.max(0, 5 - (selected.images?.length ?? 0));
+    if (remain <= 0) return;
+    const urls = await readFilesAsDataUrls(files, remain);
+    setSelected((s) => (s ? { ...s, images: [...(s.images || []), ...urls] } : s));
+    setFileKey(Date.now());
+  }
+
+  function removeImageAt(idx: number) {
+    setSelected((s) =>
+      s ? { ...s, images: (s.images || []).filter((_, i) => i !== idx) } : s
+    );
+  }
+
+  function promoteToMain(idx: number) {
+    setSelected((s) => {
+      if (!s) return s;
+      const arr = [...(s.images || [])];
+      const [sp] = arr.splice(idx, 1);
+      arr.unshift(sp);
+      return { ...s, images: arr };
+    });
+  }
+
   const editor = selected && (
     <div className="bg-[#e1e6cc] rounded-2xl p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold">Update Product</h3>
-        <button
-          className="text-red-600"
-          onClick={() => onDelete(selected)}
-          title="Delete product"
-        >
+        <button className="text-red-600 cursor-pointer" onClick={() => onDelete(selected)} title="Delete product">
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
@@ -683,19 +770,14 @@ function UpdateProduct({
 
       <label className="block text-sm font-medium">Stock</label>
       <div className="flex items-center gap-3 mb-4">
-        {/* Decrease Button */}
         <button
           className="px-2 py-1 rounded border"
           onClick={() =>
-            setSelected((s) =>
-              s ? { ...s, stock: Math.max(0, s.stock - 1) } : s
-            )
+            setSelected((s) => (s ? { ...s, stock: Math.max(0, s.stock - 1) } : s))
           }
         >
           –
         </button>
-
-        {/* Editable Input */}
         <input
           type="number"
           min={0}
@@ -707,13 +789,9 @@ function UpdateProduct({
           }
           className="w-20 text-center rounded border p-1 focus:ring-1 focus:ring-[#5f6f46] outline-none"
         />
-
-        {/* Increase Button */}
         <button
           className="px-2 py-1 rounded border"
-          onClick={() =>
-            setSelected((s) => (s ? { ...s, stock: s.stock + 1 } : s))
-          }
+          onClick={() => setSelected((s) => (s ? { ...s, stock: s.stock + 1 } : s))}
         >
           +
         </button>
@@ -738,19 +816,93 @@ function UpdateProduct({
             ].join(" ")}
             onClick={() => setSelected({ ...selected, category: c })}
           >
-            {c === "Intimate" ? "Intimate" : "T-Shirt"}
+            {c}
           </button>
         ))}
       </div>
 
-      <div className="flex gap-3 mb-4">
-        <button className="px-3 py-2 rounded-lg border bg-white inline-flex items-center gap-2">
-          <PencilLine className="w-4 h-4" />
-          ADD IMAGE
-        </button>
-        <button className="px-3 py-2 rounded-lg border border-red-300 text-red-600 bg-white">
-          REMOVE
-        </button>
+      {/* Image manager (add, set main, remove, capped at 5) */}
+      <div className="mb-4">
+        <p className="text-sm font-medium mb-2">Images (main shown first)</p>
+
+        <div className="mb-3">
+          <label className="inline-flex items-center gap-2 rounded-lg border bg-white px-3 py-2 cursor-pointer">
+            <PlusIcon className="w-4 h-4" />
+            <span>Add Images</span>
+            <input
+              key={fileKey}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={async (e) => addImages(Array.from(e.currentTarget.files ?? []))}
+              disabled={(selected.images?.length ?? 0) >= 5}
+            />
+          </label>
+          <span className="ml-3 text-xs text-gray-600">
+            {(selected.images?.length ?? 0)}/5 added
+          </span>
+        </div>
+
+        <div className="flex gap-2 flex-wrap">
+          {selected.images.map((src, i) => {
+            const isMain = i === 0;
+            return (
+              <div
+                key={i}
+                className={[
+                  "relative rounded-md overflow-hidden",
+                  "border transition-all",
+                  isMain
+                    ? "border-emerald-600 ring-2 ring-emerald-400 shadow-[0_0_0_3px_rgba(16,185,129,0.15)]"
+                    : "border-gray-300 hover:border-gray-400"
+                ].join(" ")}
+              >
+                {/* MAIN badge */}
+                {isMain && (
+                  <span className="absolute left-1 top-1 z-10 rounded-sm bg-emerald-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow">
+                    Main
+                  </span>
+                )}
+
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={src}
+                  alt={`img-${i}`}
+                  className={[
+                    "w-20 h-20 object-cover",
+                    isMain ? "opacity-100" : "opacity-95 hover:opacity-100"
+                  ].join(" ")}
+                />
+
+                <div className="absolute inset-x-0 bottom-0 flex justify-between gap-1 p-1 bg-white/90">
+                  {!isMain ? (
+                    <button
+                      title="Set as main"
+                      className="px-2 py-1 text-[11px] border rounded hover:bg-white cursor-pointer inline-flex items-center gap-1"
+                      onClick={() => promoteToMain(i)}
+                    >
+                      <ArrowUp className="w-3 h-3" /> 
+                    </button>
+                  ) : (
+                    <span className="px-1 py-1 text-[11px] border border-emerald-500 bg-emerald-50 text-emerald-700 rounded">
+                      <Check />
+                    </span>
+                  )}
+
+                  <button
+                    title="Remove"
+                    className="px-2 py-1 text-[11px] border hover:bg-red-200 cursor-pointer border-red-300 text-red-600 rounded inline-flex items-center gap-1"
+                    onClick={() => removeImageAt(i)}
+                  >
+                    <X className="w-3 h-3" /> 
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
       </div>
 
       <label className="block text-sm font-medium">Price</label>
@@ -763,15 +915,19 @@ function UpdateProduct({
       />
 
       <div className="flex gap-3">
-        <Buttons context="RESET" combo="redTransparent" className="px-8" onClick={() => setSelected(items[0] ?? null)} />
-        
-        <Buttons context="UPDATE PRODUCT"  onClick={() => selected && onUpdated(selected)} />
+        <Buttons
+          context="RESET"
+          combo="redTransparent"
+          className="px-8"
+          onClick={() => setSelected(items[0] ?? null)}
+        />
+        <Buttons context="UPDATE PRODUCT" onClick={() => selected && onUpdated(selected)} />
       </div>
     </div>
   );
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_400px] gap-8">
+    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_480px] gap-8">
       {table}
       {editor}
     </div>
@@ -779,24 +935,27 @@ function UpdateProduct({
 }
 
 /* =========================
-   All Products (list)
+   All Products (main image only)
 ========================= */
 function AllProducts({ items }: { items: UIProduct[] }) {
   const rows = useMemo(
     () =>
-      items.map((p) => (
-        <tr key={p._id ?? p.productId} className="border-t">
-          <td className="p-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={p.image} alt={p.name} className="w-14 h-14 rounded object-cover" />
-          </td>
-          <td className="p-3">{p.productId ?? "—"}</td>
-          <td className="p-3">{p.name}</td>
-          <td className="p-3">{p.description}</td>
-          <td className="p-3">{p.stock}</td>
-          <td className="p-3">Rs. {p.price}</td>
-        </tr>
-      )),
+      items.map((p) => {
+        const main = p.images?.[0] || "/assets/images/team.png";
+        return (
+          <tr key={p._id ?? p.productId} className="border-t">
+            <td className="p-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={main} alt={p.name} className="w-14 h-14 rounded object-cover" />
+            </td>
+            <td className="p-3">{p.productId ?? "—"}</td>
+            <td className="p-3">{p.name}</td>
+            <td className="p-3">{p.description}</td>
+            <td className="p-3">{p.stock}</td>
+            <td className="p-3">Rs. {p.price}</td>
+          </tr>
+        );
+      }),
     [items]
   );
 

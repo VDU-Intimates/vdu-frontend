@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useSearchParams } from 'next/navigation';
 import NavBar from "../components/nav-bar/nav-bar";
 import Footer from "../components/footer/footer";
+import Image from "next/image";
 
 // --- TYPE DEFINITIONS ---
 // These types must reflect the data structure returned by the backend's getOrderInvoiceById
@@ -139,16 +140,26 @@ const Invoice = () => {
   }
   
   // Dates for display
-  const orderDate = new Date(order.date).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  const finalDate = new Date(new Date().setDate(new Date(order.date).getDate() + 30)).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  
+  const orderDate = new Date(order.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const finalDate = new Date(new Date().setDate(new Date(order.date).getDate() + 30)).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+  // const dueDateObj = new Date(order.date);
+  // dueDateObj.setDate(dueDateObj.getDate() + 30);
+
+  // const dueDate = dueDateObj.toLocaleDateString('en-GB', {
+  //   day: '2-digit',
+  //   month: '2-digit',
+  //   year: 'numeric'
+  // });
+
+
   // 💡 Extract delivery details for clean rendering
   const delivery = order.deliveryDetails;
 
   return (
     <div>
       <NavBar />
-      <div className="min-h-screen bg-[#D9EAD6] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#D9EAD6] font-poppins flex items-center justify-center p-6">
         <div className="bg-white w-full max-w-5xl shadow-xl rounded-xl p-8 text-sm">
           
           {/* TOP HEADER SECTION */}
@@ -156,7 +167,7 @@ const Invoice = () => {
             {/* Left: Company Details */}
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <img src="/assets/icons/logo.jpg" alt="VDU" className="w-10 h-10 object-cover rounded-full" /> 
+                <Image src="/assets/icons/logo.jpg" alt="VDU" width={40} height={40} className="w-10 h-10 object-cover rounded-full" /> 
                 <h1 className="text-xl font-bold text-gray-800">VDU INTIMATES</h1>
               </div>
               <p className="pl-12 text-gray-600">Prasanna Meemana</p>
@@ -267,8 +278,14 @@ const Invoice = () => {
                 
                 {/* Total (Subtotal) */}
                 <div className="flex justify-between border-t pt-2">
-                    <span className="font-medium">Total</span>
+                    <span className="font-medium">Sub Total</span>
                     <span className="text-gray-700">Rs.{formatCurrency(order.subTotal)}</span>
+                </div>
+
+                {/* Total (Subtotal) */}
+                <div className="flex justify-between border-t pt-2">
+                    <span className="font-medium">Discount</span>
+                    <span className="text-red-500">(Rs.{formatCurrency(order.discount)})</span>
                 </div>
                 
                 {/* Deliver Fee */}
