@@ -109,7 +109,7 @@ const BestSelling = () => {
       setLoading(true);
       setErr(null);
       try {
-        const res = await fetch(`${API_BASE}/api/products/top-rated?limit=4`);
+        const res = await fetch(`${API_BASE}/api/ratings/top-rated?limit=4`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const raw = await res.json();
         const data = raw.data || [];
