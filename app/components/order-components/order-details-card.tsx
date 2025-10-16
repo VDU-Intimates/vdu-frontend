@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// components/order-components/order-details-card.tsx
 import toast from "react-hot-toast";
 import PrimaryButton from "@/app/components/common-components/primary-button";
-import { Check, X, ShoppingCart, Truck, PackageCheck, ArrowLeft } from "lucide-react";
+import { Check, X, ShoppingCart, Truck, PackageCheck } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
 import BackButton from "../common-components/back-button";
@@ -14,6 +16,8 @@ interface OrderItem {
   unitPrice: number;
   productId: string;
   photoUrl: string | null;
+  isCustomized?: boolean;
+  customPreviewUrl?: string | null;
 }
 
 interface OrderDetails {
@@ -30,35 +34,25 @@ interface OrderDetailsCardProps {
   orderId: string;
 }
 
-const getAuthToken = (): string | null => {
-  return localStorage.getItem('access_token');
-};
+const getAuthToken = () => localStorage.getItem('access_token');
 
 const OrderDetailsCard = ({ order, items, orderId }: OrderDetailsCardProps) => {
   const [isLoading, setIsLoading] = useState(false);
 
-
   const updateOrderStatus = async (status: OrderStatus) => {
     setIsLoading(true);
     const token = getAuthToken();
-    if (!token) {
-      toast.error("Authentication error.");
-      setIsLoading(false);
-      return;
-    }
+    if (!token) { toast.error("Authentication error."); setIsLoading(false); return; }
     try {
       const response = await fetch(`http://localhost:5000/api/orders/${orderId}/status`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ status }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to update status.');
       toast.success(`Order successfully updated to ${status.toLowerCase()}!`);
-      window.location.reload(); 
+      window.location.reload();
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -72,14 +66,12 @@ const OrderDetailsCard = ({ order, items, orderId }: OrderDetailsCardProps) => {
     switch (status) {
       case 'Accepted':
       case 'Shipped':
-      case 'Delivered':
-        return 'bg-green-100 text-green-800';
+      case 'Delivered': return 'bg-green-100 text-green-800';
       case 'Cancelled': return 'bg-red-100 text-red-800';
       default: return 'bg-yellow-100 text-yellow-800';
     }
   };
 
-  // Helper component to render the correct action button based on the current order status
   const ActionButton = () => {
     switch (order.orderStatus) {
       case 'Pending':
@@ -93,14 +85,16 @@ const OrderDetailsCard = ({ order, items, orderId }: OrderDetailsCardProps) => {
               className={`!w-full !h-auto ${isLoading ? 'opacity-50' : ''}`}
             />
             <div className={`w-full h-auto rounded-lg p-[1px] bg-red-600 ${isLoading ? 'opacity-50' : ''}`}>
-              <button onClick={() => updateOrderStatus('Cancelled')} disabled={isLoading} 
-                      className='p-3 flex items-center justify-center bg-red-600 hover:bg-red-700 w-full h-full rounded-lg text-white font-bold gap-2 transition-colors disabled:cursor-not-allowed'>
-                REJECT ORDER <X className="w-5 h-5" /> 
+              <button
+                onClick={() => updateOrderStatus('Cancelled')}
+                disabled={isLoading}
+                className="p-3 flex items-center justify-center bg-red-600 hover:bg-red-700 w-full h-full rounded-lg text-white font-bold gap-2 transition-colors disabled:cursor-not-allowed"
+              >
+                REJECT ORDER <X className="w-5 h-5" />
               </button>
             </div>
           </div>
         );
-      
       case 'Accepted':
         return (
           <div>
@@ -113,7 +107,6 @@ const OrderDetailsCard = ({ order, items, orderId }: OrderDetailsCardProps) => {
             />
           </div>
         );
-        
       case 'Shipped':
         return (
           <div>
@@ -126,8 +119,7 @@ const OrderDetailsCard = ({ order, items, orderId }: OrderDetailsCardProps) => {
             />
           </div>
         );
-
-      default: // For 'Delivered' and 'Cancelled' statuses, show the final badge
+      default:
         return (
           <div>
             <h4 className="text-sm font-semibold text-gray-600 mb-2">Order Status</h4>
@@ -141,9 +133,9 @@ const OrderDetailsCard = ({ order, items, orderId }: OrderDetailsCardProps) => {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-xl h-full border border-gray-100">
-      <BackButton label="Back to All Orders" className="mb-4"/>
-      
-      {/* Pricing Breakdown Section */}
+      <BackButton label="Back to All Orders" className="mb-4" />
+
+      {/* Pricing */}
       <div className="space-y-2 text-sm mb-6">
         <div className="font-medium text-lg">Order ID: <span className="font-semibold">{orderId}</span></div>
         <hr className="my-2"/>
@@ -157,38 +149,42 @@ const OrderDetailsCard = ({ order, items, orderId }: OrderDetailsCardProps) => {
         <div className="font-bold text-base pt-1">Grand Total: <span className="float-right">Rs. {order.totalAmount.toLocaleString()}</span></div>
       </div>
 
-      {/* Items List Section */}
+      {/* Items */}
       <div className="mb-6">
-          <h3 className="text-md font-semibold mb-3 flex items-center gap-2">
-              <ShoppingCart className="w-5 h-5 text-gray-600"/>
-              Items in this Order
-          </h3>
-          <div className="space-y-4 border rounded-lg p-3 bg-gray-50/50">
-              {items.map(item => (
-                  <div key={item._id} className="grid grid-cols-12 gap-4 items-center text-sm">
-                      <div className="col-span-2">
-                        <Image
-                          src={item.photoUrl ? item.photoUrl : '/assets/icons/logo.jpg'}
-                          alt={item.name}
-                          width={80}
-                          height={80}
-                          className="rounded-md object-cover aspect-square bg-gray-100"
-                        />
-                      </div>
-                      <div className="col-span-5">
-                        <span className="font-medium text-gray-800">{item.name}</span>
-                        <p className="text-xs text-gray-500">{item.productId}</p>
-                      </div>
-                      <span className="col-span-2 text-gray-600">Qty: {item.quantity}</span>
-                      <span className="col-span-3 text-right font-semibold text-gray-900">
-                          Rs. {(item.unitPrice * item.quantity).toLocaleString()}
-                      </span>
-                  </div>
-              ))}
-          </div>
+        <h3 className="text-md font-semibold mb-3 flex items-center gap-2">
+          <ShoppingCart className="w-5 h-5 text-gray-600" />
+          Items in this Order
+        </h3>
+        <div className="space-y-4 border rounded-lg p-3 bg-gray-50/50">
+          {items.map(item => {
+            const preferred =
+            (item.isCustomized && item.customPreviewUrl ? item.customPreviewUrl : item.photoUrl) || null;
+          const safeSrc = preferred || '/assets/icons/logo.jpg';
+            return (
+              <div key={item._id} className="grid grid-cols-12 gap-4 items-center text-sm">
+                <div className="col-span-2">
+                  <Image
+                    src={safeSrc}
+                    alt={item.name}
+                    width={80}
+                    height={80}
+                    className="rounded-md object-cover aspect-square bg-gray-100"
+                  />
+                </div>
+                <div className="col-span-5">
+                  <span className="font-medium text-gray-800">{item.name}</span>
+                  <p className="text-xs text-gray-500">{item.productId}</p>
+                </div>
+                <span className="col-span-2 text-gray-600">Qty: {item.quantity}</span>
+                <span className="col-span-3 text-right font-semibold text-gray-900">
+                  Rs. {(item.unitPrice * item.quantity).toLocaleString()}
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Action Buttons Section with Full Workflow Logic */}
       <div className="mt-6">
         <ActionButton />
       </div>
