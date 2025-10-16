@@ -10,7 +10,7 @@ type FabricAPI = typeof import("fabric");
 type MaybeWrapped = FabricAPI & { fabric?: FabricAPI };
 export const fabric = ((fabricNS as MaybeWrapped).fabric ?? fabricNS) as FabricAPI;
 
-import { Plus, ShoppingCart, Type, Upload, X, ZoomIn, Download, DownloadCloud } from 'lucide-react';
+import { Plus, ShoppingCart, Type, Upload, X, ZoomIn, DownloadCloud } from 'lucide-react';
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import Buttons from '../components/common-components/button';
@@ -26,7 +26,6 @@ import Link from 'next/link';
 function hasFontFaceSet(d: Document): d is Document & { fonts: FontFaceSet } {
   return typeof (d as Document & Partial<{ fonts: FontFaceSet }>).fonts !== 'undefined';
 }
-
 export async function ensureFontLoaded(family: string, weight = 400): Promise<void> {
   if (typeof document === 'undefined') return;
   if (!hasFontFaceSet(document)) return;
@@ -39,18 +38,11 @@ export async function ensureFontLoaded(family: string, weight = 400): Promise<vo
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:5000';
 
 function getToken() {
-  try {
-    return localStorage.getItem('access_token') || '';
-  } catch {
-    return '';
-  }
+  try { return localStorage.getItem('access_token') || ''; } catch { return ''; }
 }
-
 function getErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
-  if (typeof err === 'object' && err && 'message' in err) {
-    return String((err as { message?: unknown }).message);
-  }
+  if (typeof err === 'object' && err && 'message' in err) return String((err as { message?: unknown }).message);
   return 'Something went wrong.';
 }
 
@@ -64,7 +56,6 @@ type ApiUser = {
   createdAt: string;
   updatedAt: string;
 };
-
 type ApiProduct = {
   _id: string;
   productId: string;
@@ -77,7 +68,6 @@ type ApiProduct = {
   category: 'T-Shirt' | 'Intimate';
   stock: number;
 };
-
 type Design = {
   _id: string;
   designUrl: string;
@@ -96,7 +86,7 @@ type Design = {
 };
 
 /* ===========================
-   OPTIONAL: compose helper
+   Compose helper
 =========================== */
 async function composeDesignOnBase(zonePngUrl: string, baseUrl: string): Promise<string> {
   const tee = await fabric.Image.fromURL(baseUrl, { crossOrigin: 'anonymous' });
@@ -157,6 +147,8 @@ const CustomizationPage = () => {
   const paramColor = search.get('color')?.trim() || '';
 
   const [loading, setLoading] = useState(true);
+  const [btnBusy, setBtnBusy] = useState(false);
+  const [btnBusyEx, setBtnBusyEx] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [product, setProduct] = useState<ApiProduct | null>(null);
 
@@ -164,25 +156,17 @@ const CustomizationPage = () => {
   const [designs, setDesigns] = useState<Design[]>([]);
   const [loadingDesigns, setLoadingDesigns] = useState(false);
 
-  // Report filters
-  const [from, setFrom] = useState<string>(""); // YYYY-MM-DD
-  const [to, setTo] = useState<string>("");     // YYYY-MM-DD
-
   /* ---------- auth ---------- */
   useEffect(() => {
     const run = async () => {
       const token = getToken();
       if (!token) return setCurrentUser(null);
       try {
-        const res = await fetch(`${API_BASE}/api/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await fetch(`${API_BASE}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
         if (!res.ok) return setCurrentUser(null);
         const data: { user: ApiUser } = await res.json();
         setCurrentUser(data.user);
-      } catch {
-        setCurrentUser(null);
-      }
+      } catch { setCurrentUser(null); }
     };
     run();
   }, []);
@@ -208,19 +192,14 @@ const CustomizationPage = () => {
         const doc: ApiProduct = await res.json();
         if (!cancelled) setProduct(doc);
       } catch (e: unknown) {
-        if (!cancelled) {
-          setErr(getErrorMessage(e) || 'Failed to load product');
-          setProduct(null);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+        if (!cancelled) { setErr(getErrorMessage(e) || 'Failed to load product'); setProduct(null); }
+      } finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
   }, [paramId]);
 
   const productBg = useMemo(
-    () => product?.photoUrl[0] || '/assets/images/placeholder-tshirt.jpg',
+    () => product?.photoUrl?.[0] || '/assets/images/placeholder-tshirt.jpg',
     [product?.photoUrl]
   );
 
@@ -253,15 +232,11 @@ const CustomizationPage = () => {
     (canvas.getElement() as HTMLCanvasElement).style.pointerEvents = 'auto';
     (canvas.getElement() as HTMLCanvasElement).style.zIndex = '10';
 
-    return () => {
-      ro.disconnect();
-      canvas.dispose();
-      fRef.current = null;
-    };
+    return () => { ro.disconnect(); canvas.dispose(); fRef.current = null; };
   }, []);
 
   /* ===========================
-     Image Handlers
+     Image & Text Handlers
   =========================== */
   const handleAddImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const canvas = fRef.current;
@@ -284,16 +259,10 @@ const CustomizationPage = () => {
         (BASE_H * padding) / (img.height || BASE_H)
       );
 
-      img.set({
-        originX: 'center',
-        originY: 'center',
-        left: BASE_W / 2,
-        top: BASE_H / 2,
-      });
+      img.set({ originX: 'center', originY: 'center', left: BASE_W / 2, top: BASE_H / 2 });
       img.scale(scale);
 
       canvas.add(img);
-
       img.set({
         borderColor: '#306D42',
         cornerColor: '#306D42',
@@ -301,7 +270,6 @@ const CustomizationPage = () => {
         cornerStyle: 'rectangle',
         transparentCorners: false,
       });
-
       canvas.setActiveObject(img);
       canvas.requestRenderAll();
 
@@ -309,22 +277,16 @@ const CustomizationPage = () => {
       if (fileInputRef.current) fileInputRef.current.value = '';
     };
   };
-
   const handleRemoveImage = () => {
     const canvas = fRef.current;
     if (!canvas) return;
-
     const img = userImagesRef.current.pop();
     if (!img) return;
-
     canvas.remove(img.node);
     img.node.dispose?.();
     canvas.requestRenderAll();
   };
 
-  /* ===========================
-     Text Handlers
-  =========================== */
   const handleAddText = async () => {
     const canvas = fRef.current;
     if (!canvas) return;
@@ -334,7 +296,6 @@ const CustomizationPage = () => {
 
     const fontFamily = fontRef.current?.value || 'Raleway';
     const fontSize = Number(sizeRef.current?.value || 16);
-
     await ensureFontLoaded(fontFamily, 400);
 
     const tb = new fabric.Textbox(textValue, {
@@ -351,17 +312,13 @@ const CustomizationPage = () => {
     canvas.add(tb);
     canvas.setActiveObject(tb);
     canvas.requestRenderAll();
-
     userTextsRef.current.push(tb);
   };
-
   const handleRemoveText = () => {
     const canvas = fRef.current;
     if (!canvas) return;
-
     const tb = userTextsRef.current.pop();
     if (!tb) return;
-
     canvas.remove(tb);
     canvas.requestRenderAll();
   };
@@ -372,7 +329,6 @@ const CustomizationPage = () => {
   function collectImageUrls(): string[] {
     return userImagesRef.current.map((p) => p.src);
   }
-
   function collectTexts() {
     return userTextsRef.current.map((tb) => ({
       content: tb.text || '',
@@ -386,7 +342,7 @@ const CustomizationPage = () => {
   }
 
   /* ===========================
-     API Calls
+     Designs API
   =========================== */
   async function loadDesigns() {
     setLoadingDesigns(true);
@@ -395,112 +351,183 @@ const CustomizationPage = () => {
         headers: { Authorization: `Bearer ${getToken()}` },
         cache: 'no-store',
       });
-      if (!res.ok) {
-        const txt = await res.text().catch(() => '');
-        throw new Error(`List failed (${res.status}) ${txt}`);
-      }
+      if (!res.ok) throw new Error(`List failed (${res.status})`);
       const payload = await res.json();
       setDesigns(payload?.data || []);
     } catch (e) {
       console.error('[designs] error:', e);
-    } finally {
-      setLoadingDesigns(false);
-    }
+    } finally { setLoadingDesigns(false); }
   }
   useEffect(() => { loadDesigns(); }, []);
 
-  async function saveDesign() {
+  /** Save current canvas as a design and return the created document */
+  async function saveDesignAndGet(): Promise<Design> {
     const canvas = fRef.current;
-    if (!canvas) return;
+    if (!canvas || !product) throw new Error('Canvas or product not ready');
 
-    const zonePng = canvas.toDataURL({
-      format: 'png',
-      multiplier: 3,
-      enableRetinaScaling: true,
-    });
+    // 1) render zone
+    const zonePng = canvas.toDataURL({ format: 'png', multiplier: 3, enableRetinaScaling: true });
 
-    const base = productBg;
+    // 2) compose preview on top of base product
     let designUrl = zonePng;
     try {
-      designUrl = await composeDesignOnBase(zonePng, base);
-    } catch (e) {
-      console.warn('[save] compose failed, falling back to zone only:', e);
-    }
+      designUrl = await composeDesignOnBase(zonePng, productBg);
+    } catch { /* fallback is zone only */ }
 
     const imageUrls = collectImageUrls();
     const texts = collectTexts();
 
+    // 3) save
+    const res = await fetch(`${API_BASE}/api/designs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+      body: JSON.stringify({
+        designUrl,
+        imageUrls,
+        texts,
+        productName: product?.productName || 'T-Shirt',
+      }),
+    });
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      throw new Error(`Save failed (${res.status}) ${txt}`);
+    }
+    const created = await res.json();
+    // expected either `{ data: <design> }` or `<design>`; normalize
+    const doc: Design = created?.data?._id ? created.data : created;
+    if (!doc || !doc._id) throw new Error('Design save did not return an id');
+
+    return doc;
+  }
+
+  /* ===========================
+     Cart add flows
+  =========================== */
+
+  /** Add the current (unsaved) canvas as a new design, then add to cart. */
+  async function addCustomizedToCart() {
     try {
-      const res = await fetch(`${API_BASE}/api/designs`, {
+      const token = getToken();
+      if (!token) { toast.error('Please log in first'); return; }
+      if (!product) { toast.error('Product not loaded'); return; }
+      const size = paraSize || product.sizes?.[0] || 'M';
+
+      setBtnBusy(true);
+
+      // 1) Save the design first -> we get a real designId
+      const design = await saveDesignAndGet();
+
+      // 2) Post to cart with the real designId and the preview
+      const payload = {
+        items: [
+          {
+            productId: product.productId,
+            size,
+            quantity: 1,
+            custom: {
+              designId: design._id,            // REAL id
+              previewUrl: design.designUrl,    // show this in cart
+              imageUrls: design.imageUrls || [],
+              texts: design.texts || [],
+              color,                           // selected color
+              note: '',
+            },
+          },
+        ],
+      };
+
+      const res = await fetch(`${API_BASE}/api/cart`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${getToken()}`,
-        },
-        body: JSON.stringify({
-          designUrl,
-          imageUrls,
-          texts,
-          productName: product?.productName || 'T-Shirt',
-        }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
       });
-      if (!res.ok) {
-        const txt = await res.text().catch(() => '');
-        throw new Error(`Save failed (${res.status}) ${txt}`);
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.message || `HTTP ${res.status}`);
+
+      toast.success('Customized item added to cart');
+      // Optionally refresh previous designs so the new one appears first:
+      await loadDesigns();
+    } catch (e) {
+      console.error('addCustomizedToCart error:', e);
+      const msg = getErrorMessage(e);
+      if (/Duplicate cart line/i.test(msg)) {
+        toast.success('Quantity updated for this design');
+      } else {
+        toast.error(msg || 'Failed to add customized item');
       }
-      toast.success("Design Saved");
-      await loadDesigns();
-    } catch (e) {
-      console.error('[save] error:', e);
-      toast.error("Error Saving Design");
+    } finally {
+      setBtnBusy(false);
     }
   }
 
-  async function deleteDesign(id: string) {
+  /** Add a design from the “Previous Designs” list */
+  async function addExistingDesignToCart(d: Design) {
     try {
-      const res = await fetch(`${API_BASE}/api/designs/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${getToken()}` },
+      const token = getToken();
+      if (!token) { toast.error('Please log in first'); return; }
+      if (!product) { toast.error('Product not loaded'); return; }
+      const size = paraSize || product.sizes?.[0] || 'M';
+
+      setBtnBusyEx(true);
+
+      const payload = {
+        items: [
+          {
+            productId: product.productId,
+            size,
+            quantity: 1,
+            custom: {
+              designId: d._id,
+              previewUrl: d.designUrl,
+              imageUrls: Array.isArray(d.imageUrls) ? d.imageUrls : [],
+              texts: Array.isArray(d.texts) ? d.texts : [],
+              color, // current color selection (optional)
+              note: '',
+            },
+          },
+        ],
+      };
+
+      const res = await fetch(`${API_BASE}/api/cart`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error(`Delete failed (${res.status})`);
-      toast.success("Design Deleted");
-      await loadDesigns();
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.message || `HTTP ${res.status}`);
+
+      toast.success('Design added to cart');
     } catch (e) {
-      console.error('[delete] error:', e);
-      toast.error("Error deleting Design");
+      console.error('addExistingDesignToCart error:', e);
+      const msg = getErrorMessage(e);
+      if (/Duplicate cart line/i.test(msg)) {
+        toast.success('Quantity updated for this design');
+      } else {
+        toast.error(msg || 'Failed to add design');
+      }
+    } finally {
+      setBtnBusyEx(false);
     }
   }
 
+  /* ===========================
+     Preview
+  =========================== */
   async function previewDesign() {
     const canvas = fRef.current;
     if (!canvas) return;
-
-    const zonePng = canvas.toDataURL({
-      format: 'png',
-      multiplier: 3,
-      enableRetinaScaling: true,
-    });
-
-    const base = productBg;
+    const zonePng = canvas.toDataURL({ format: 'png', multiplier: 3, enableRetinaScaling: true });
     let finalOut = zonePng;
-    try {
-      finalOut = await composeDesignOnBase(zonePng, base);
-    } catch (e) {
-      console.warn('[preview] compose failed, falling back to zone only:', e);
-    }
-
+    try { finalOut = await composeDesignOnBase(zonePng, productBg); } catch {}
     const win = window.open('', '_blank');
     if (win) {
       win.document.write('<title>Design Preview</title>');
-      win.document.write(
-        `<img src="${finalOut}" style="display:block;max-width:100%;height:auto;" />`
-      );
+      win.document.write(`<img src="${finalOut}" style="display:block;max-width:100%;height:auto;" />`);
       win.document.close();
     }
   }
-
-  // NEW: Download CSV report for my designs
-
 
   /* ===========================
      UI
@@ -511,14 +538,16 @@ const CustomizationPage = () => {
 
       <main className="min-h-screen max-md:px-5 mt-10">
         <div className='flex justify-end px-4 sm:px-6 max-w-[1450px] lg:px-2'>
-          <Link href='/CustomizationReport'><Buttons context="REVIEW REPORT" icon={DownloadCloud}/></Link>
+          <Link href='/CustomizationReport'>
+            <Buttons context="REVIEW REPORT" icon={DownloadCloud}/>
+          </Link>
         </div>
 
         <div className="mx-auto max-w-[1450px] px-4 sm:px-6 lg:px-2 py-6 ">
           <div className="grid gap-10 lg:grid-cols-[2fr_1fr]">
             {/* Left panel */}
             <div className="rounded-xl bg-[#bfcfbf]/65 p-4 sm:p-6 lg:p-8 shadow-md">
-              <h2 className="text-center mb-10  text-4xl font-bold ">Customize Your Product</h2>
+              <h2 className="text-center mb-10 text-4xl font-bold">Customize Your Product</h2>
               <div className="mt-6 grid gap-6 xl:grid-cols-2">
                 <div className="flex flex-col items-center">
                   {/* Background IMAGE + canvas zone */}
@@ -531,7 +560,6 @@ const CustomizationPage = () => {
                       priority
                       draggable={false}
                     />
-
                     <div
                       ref={zoneRef}
                       className="
@@ -560,7 +588,12 @@ const CustomizationPage = () => {
                         <button
                           className="grid place-items-center size-9 max-md:size-7 rounded-full border-2 border-gray-200 bg-white text-gray-700 shadow-sm hover:bg-emerald-50 hover:border-emerald-400 cursor-pointer hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1 transition-colors duration-200"
                           aria-label="Save and Create New Design"
-                          onClick={saveDesign}
+                          onClick={async () => {
+                            try { setBtnBusy(true); await saveDesignAndGet(); toast.success('Design Saved'); await loadDesigns(); }
+                            catch (e) { toast.error(getErrorMessage(e)); }
+                            finally { setBtnBusy(false); }
+                          }}
+                          disabled={btnBusy}
                         >
                           <Plus className="h-4 w-4" />
                         </button>
@@ -596,12 +629,12 @@ const CustomizationPage = () => {
 
                   <div>
                     <h2 className="text-xl font-bold text-black">Selected Size</h2>
-                    <p className="text-black/70 font-semibold">{paraSize}</p>
+                    <p className="text-black/70 font-semibold">{paraSize || product?.sizes?.[0] || '—'}</p>
                   </div>
 
                   <div>
                     <h2 className="text-xl font-bold text-black">Selected Color</h2>
-                    <p className="text-black/70 font-semibold">{paramColor}</p>
+                    <p className="text-black/70 font-semibold">{paramColor || color}</p>
                   </div>
 
                   {/* Add Image */}
@@ -619,7 +652,6 @@ const CustomizationPage = () => {
                           id="image-selector"
                           ref={fileInputRef}
                           onChange={handleAddImage}
-                          // accept="image/*"
                         />
                       </label>
 
@@ -680,15 +712,21 @@ const CustomizationPage = () => {
                     </div>
                   </div>
 
-                  {/* Cart Button (optional wiring) */}
+                  {/* Add to Cart */}
                   <div className="flex justify-end mt-6 text-sm">
-                    <Buttons context="ADD TO CART" icon={ShoppingCart} productId={product?.productId} size={paraSize}/>
+                    <button
+                      onClick={addCustomizedToCart}
+                      disabled={btnBusy}
+                      className={`px-4 py-2 rounded-xl text-white font-semibold ${btnBusy ? 'bg-emerald-400' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+                    >
+                      {btnBusy ? 'ADDING…' : 'ADD TO CART'}
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Right panel */}
+            {/* Right panel - Previous Designs */}
             <div className="rounded-xl bg-[#e1dacc] p-4 sm:p-6 lg:p-8 shadow-md">
               <h2 className="text-center text-2xl font-bold underline">Previous Designs</h2>
 
@@ -708,7 +746,7 @@ const CustomizationPage = () => {
                       <div className="flex flex-col gap-3 min-w-[250px]">
                         <div>
                           <p className="font-semibold text-sm sm:text-base">
-                            Product Name : <span className="font-normal">{d.productName || 'T-Shirt'}</span>
+                            Product Name : <span className="font-normal">{product?.productName || d.productName || 'T-Shirt'}</span>
                           </p>
                           <p className="font-semibold text-sm sm:text-base">
                             Created At : <span className="font-normal">{new Date(d.createdAt).toLocaleDateString()}</span>
@@ -720,9 +758,25 @@ const CustomizationPage = () => {
                             context="DELETE DESIGN"
                             icon={X}
                             combo="redTransparent"
-                            onClick={() => deleteDesign(d._id)}
+                            onClick={async () => {
+                              try {
+                                const res = await fetch(`${API_BASE}/api/designs/${d._id}`, {
+                                  method: 'DELETE',
+                                  headers: { Authorization: `Bearer ${getToken()}` },
+                                });
+                                if (!res.ok) throw new Error(`Delete failed (${res.status})`);
+                                toast.success('Design Deleted');
+                                await loadDesigns();
+                              } catch (e) { toast.error(getErrorMessage(e)); }
+                            }}
                           />
-                          <Buttons context="ADD TO CART" icon={ShoppingCart} />
+                          <button
+                            onClick={() => addExistingDesignToCart(d)}
+                            disabled={btnBusyEx}
+                            className={`px-4 py-2 rounded-xl text-white font-semibold ${btnBusy ? 'bg-emerald-400' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+                          >
+                            {btnBusyEx ? 'ADDING…' : 'ADD TO CART'}
+                          </button>
                         </div>
                       </div>
                     </div>

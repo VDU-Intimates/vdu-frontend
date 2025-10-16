@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps */ 
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
@@ -14,14 +14,33 @@ import { loadStripe, Stripe } from '@stripe/stripe-js';
 
 const API_BASE = 'http://localhost:5000';
 
+type CustomText = {
+  content: string;
+  fontFamily?: string;
+  fontSize?: number;
+  color?: string;
+  left?: number;
+  top?: number;
+  angle?: number;
+};
+
 interface CartItemType {
   id: string;
-  productId: string;     // business productId (string)
-  name: string;
+  productId: string;
+  productName: string;
   price: number;
-  imageUrl: string[];    // main image is imageUrl[0]
+  photoUrl: string;
   size: string;
   quantity: number;
+  custom?: {
+    isCustomized?: boolean;
+    designId?: string;
+    previewUrl?: string;
+    imageUrls?: string[];
+    texts?: CustomText[];
+    color?: string;
+    note?: string;
+  };
 }
 
 const CartPage = () => {
@@ -31,24 +50,20 @@ const CartPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // align types with DeliveringTo
   const [deliveryInfo, setDeliveryInfo] = useState<DeliveryInfo>({
     fullName: '',
     address: '',
     phoneNumber: '',
     email: '',
-    paymentMethod: 'cod', // default
+    paymentMethod: 'cod',
   });
 
-  const getAuthToken = (): string | null => {
-    return (
-      localStorage.getItem('authToken') ||
-      localStorage.getItem('token') ||
-      localStorage.getItem('access_token') ||
-      localStorage.getItem('jwt') ||
-      localStorage.getItem('userToken')
-    );
-  };
+  const getAuthToken = (): string | null =>
+    localStorage.getItem('authToken') ||
+    localStorage.getItem('token') ||
+    localStorage.getItem('access_token') ||
+    localStorage.getItem('jwt') ||
+    localStorage.getItem('userToken');
 
   const handleDeliveryInputChange = (field: keyof DeliveryInfo, value: string) => {
     setDeliveryInfo((prev) => ({ ...prev, [field]: value }));
@@ -67,7 +82,7 @@ const CartPage = () => {
       setIsLoading(true);
       setError(null);
       const token = getAuthToken();
-      if (!token) return setError('Please log in first.');
+      if (!token) { setError('Please log in first.'); return; }
 
       const res = await fetch(`${API_BASE}/api/cart`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -75,14 +90,25 @@ const CartPage = () => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
-      const transformed: CartItemType[] = data.items.map((it: any) => ({
+      const transformed: CartItemType[] = (data.items || []).map((it: any) => ({
         id: it._id,
-        productId: it.productId,     // business productId
-        name: it.productName,
+        productId: it.productId,
+        productName: it.productName,
         price: it.price,
-        imageUrl: Array.isArray(it.photoUrl) ? it.photoUrl : [it.photoUrl],
+        photoUrl: Array.isArray(it.photoUrl) ? (it.photoUrl[0] || '') : (it.photoUrl || ''),
         size: it.size,
         quantity: it.quantity,
+        custom: it.custom?.isCustomized
+          ? {
+              isCustomized: true,
+              designId: it.custom.designId || undefined,
+              previewUrl: it.custom.previewUrl || undefined,
+              imageUrls: Array.isArray(it.custom.imageUrls) ? it.custom.imageUrls : undefined,
+              texts: Array.isArray(it.custom.texts) ? it.custom.texts : undefined,
+              color: it.custom.color || undefined,
+              note: it.custom.note || undefined,
+            }
+          : undefined,
       }));
 
       setCartItems(transformed);
@@ -136,13 +162,7 @@ const CartPage = () => {
     }
   };
 
-  /**
-   * COD flow (unchanged from your logic):
-   * - Place order in your system
-   * - Create delivery
-   * - Clear cart
-   * - Redirect to invoice
-   */
+  // --- COD order
   const placeOrderCOD = async () => {
     const token = getAuthToken();
     if (!token) { alert('Please log in to place an order'); return; }
@@ -150,19 +170,24 @@ const CartPage = () => {
       alert('Please fill in all required delivery information (Full Name, Address, Phone Number)');
       return;
     }
-  
+
     setIsLoading(true);
     try {
-      const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+      // const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
       const formattedItems = cartItems.map((item) => ({
-        name: item.name,
+        name: item.productName,
         productId: item.productId,
-        customisedProductId: null,
+        size: item.size,
+        customisedProductId: item.custom?.designId || null,
         quantity: item.quantity,
         unitPrice: item.price,
+        isCustomized: !!item.custom,
+        customPreviewUrl: item.custom?.previewUrl || '',
+        customImageUrls: item.custom?.imageUrls || [],
+        customTexts: item.custom?.texts || [],
       }));
-  
-      // NOTE: include paymentType: 'COD'
+
       const orderResponse = await fetch(`${API_BASE}/api/orders/place-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -172,24 +197,21 @@ const CartPage = () => {
           discount: orderTotals.discountAmount,
           totalAmount: orderTotals.total,
           date: new Date(),
-          quantity: totalQuantity,
-          isBulk: totalQuantity > 500,
           items: formattedItems,
-          paymentType: 'COD',       // <-- NEW
+          paymentType: 'COD',
         }),
       });
-  
+
       if (!orderResponse.ok) {
-        if (orderResponse.status === 401) { alert('Session expired. Please log in again.'); return; }
-        const errorData = await orderResponse.json();
+        const errorData = await orderResponse.json().catch(() => ({}));
         throw new Error(errorData.message || `Order API error! status: ${orderResponse.status}`);
       }
-  
-      const orderData = await orderResponse.json();
-      const orderId = orderData.orderId || orderData.order?.orderId;
+
+      const out = await orderResponse.json();
+      const orderId = out.orderId || out.order?.orderId;
       if (!orderId) throw new Error('Order placed but no order ID received');
-  
-      // Best-effort delivery creation
+
+      // create delivery (best-effort)
       try {
         await fetch(`${API_BASE}/api/deliveries/create-delivery`, {
           method: 'POST',
@@ -206,7 +228,7 @@ const CartPage = () => {
       } catch (deliveryErr) {
         console.error('Delivery creation failed:', deliveryErr);
       }
-  
+
       await clearCart();
       setDeliveryInfo({ fullName: '', address: '', phoneNumber: '', email: '', paymentMethod: 'cod' });
       router.push(`/Invoice?orderId=${encodeURIComponent(orderId)}`);
@@ -218,34 +240,28 @@ const CartPage = () => {
     }
   };
 
-  /**
-   * Stripe pay-now flow, wired directly here:
-   * - Create checkout session on backend
-   * - Redirect to Stripe-hosted checkout
-   */
+  // --- Stripe
   const startStripeCheckout = async () => {
     const token = getAuthToken();
-    if (!token) {
-      alert('Please log in to pay');
-      return;
-    }
+    if (!token) { alert('Please log in to pay'); return; }
     if (!deliveryInfo.fullName || !deliveryInfo.address || !deliveryInfo.phoneNumber || !deliveryInfo.email) {
       alert('Please fill in delivery details first');
       return;
     }
-  
+
     setIsLoading(true);
     try {
-      // Prepare items with name & image so Stripe checkout looks nice
       const items = cartItems.map((i) => ({
         productId: i.productId,
-        name: i.name,
-        price: i.price,             // number in major units (e.g., 1999 => $1,999.00? If you use 1999 as LKR, it's fine; server converts to minor)
+        name: i.productName,
+        price: i.price,
         quantity: i.quantity,
-        image: i.imageUrl?.[0],     // optional absolute URL, if you have it
+        image: i.custom?.previewUrl || i.photoUrl,
+        // include size in metadata on backend if you can
+        size: i.size,
+        custom: i.custom ? { designId: i.custom.designId, color: i.custom.color } : undefined,
       }));
-  
-      // Send delivery info so server can stash in metadata
+
       const resp = await fetch(`${API_BASE}/api/payments/create-checkout-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -260,29 +276,26 @@ const CartPage = () => {
           },
         }),
       });
-  
+
       if (!resp.ok) {
         const msg = await resp.text();
         throw new Error(`Failed to create checkout session: ${msg}`);
       }
-  
+
       const data = await resp.json();
-  
-      // If backend returns a URL (recommended), just go there.
+
       if (data.url) {
         window.location.href = data.url;
         return;
       }
-  
-      // Otherwise, use session id
+
       const pk = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY as string;
       if (!pk) throw new Error('Missing NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY');
       const stripe: Stripe | null = await loadStripe(pk);
       if (!stripe) throw new Error('Stripe failed to initialize');
-  
+
       const { error } = await (stripe as any).redirectToCheckout({ sessionId: data.id });
       if (error) throw error;
-  
     } catch (err) {
       console.error('Stripe checkout error:', err);
       alert((err as Error).message || 'Payment init failed');
@@ -291,9 +304,6 @@ const CartPage = () => {
     }
   };
 
-  /**
-   * Decides which flow to run based on selected payment method
-   */
   const handleOrderConfirm = async () => {
     if (deliveryInfo.paymentMethod === 'payNow') {
       await startStripeCheckout();
@@ -302,28 +312,48 @@ const CartPage = () => {
     }
   };
 
+  // --- Stripe success: build items FROM /payments/confirm response (not cartItems)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const isSuccess = params.get('payment') === 'success';
     const sessionId = params.get('session_id');
     if (!isSuccess || !sessionId) return;
-  
+
     const run = async () => {
       try {
         setIsLoading(true);
         const token = getAuthToken();
         if (!token) throw new Error('Not authorized');
-  
-        // 1) Confirm payment and get: items, totals, deliveryInfo (from Stripe metadata)
+
+        // 1) Confirm the payment -> get canonical items + totals from backend
         const confirmRes = await fetch(`${API_BASE}/api/payments/confirm`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ sessionId }),
         });
         if (!confirmRes.ok) throw new Error(await confirmRes.text());
-        const { items, totals, deliveryInfo: deliveryInfoFromServer } = await confirmRes.json();
-  
-        // 2) Place the order via your existing API with paymentType ONLINE
+        const { items: confirmedItems, totals, deliveryInfo: deliveryInfoFromServer } = await confirmRes.json();
+
+        // 2) Transform confirmed items to OrderItem shape
+        // Make sure your backend put `size` + customization into the confirm response's items metadata
+        const itemsForOrder = (confirmedItems || []).map((i: any) => ({
+          name: i.name,
+          productId: i.productId,
+          size: i.size,                                  // must be present (from metadata)
+          customisedProductId: i.custom?.designId || null,
+          quantity: Number(i.quantity || 0),
+          unitPrice: Number(i.unitPrice || 0),           // *** already major units from backend ***
+          isCustomized: !!i.custom,
+          customPreviewUrl: i.image || '',
+          customImageUrls: i.custom?.imageUrls || [],
+          customTexts: i.custom?.texts || [],
+        })).filter((x: any) => x.productId && x.size && x.quantity > 0);
+
+        if (!itemsForOrder.length) {
+          throw new Error('No purchasable items returned from payment confirmation');
+        }
+
+        // 3) Place order with ONLINE payment
         const orderRes = await fetch(`${API_BASE}/api/orders/place-order`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -333,9 +363,7 @@ const CartPage = () => {
             discount: totals.discountAmount,
             totalAmount: totals.totalAmount,
             date: new Date(),
-            quantity: items.reduce((s: number, i: any) => s + Number(i.quantity || 0), 0),
-            isBulk: items.reduce((s: number, i: any) => s + Number(i.quantity || 0), 0) > 500,
-            items,
+            items: itemsForOrder,
             paymentType: 'ONLINE',
           }),
         });
@@ -343,8 +371,8 @@ const CartPage = () => {
         const savedOrder = await orderRes.json();
         const orderId = savedOrder.orderId || savedOrder.order?.orderId;
         if (!orderId) throw new Error('Order placed but no order ID returned');
-  
-        // 3) Create the Delivery using the server-returned delivery info
+
+        // 4) Create Delivery
         try {
           await fetch(`${API_BASE}/api/deliveries/create-delivery`, {
             method: 'POST',
@@ -361,21 +389,21 @@ const CartPage = () => {
         } catch (deliveryErr) {
           console.error('Delivery creation failed:', deliveryErr);
         }
-  
-        // 4) Clear cart (best effort)
+
+        // 5) Clear cart (best-effort)
         try {
           await fetch(`${API_BASE}/api/cart/deleteAll`, {
             method: 'DELETE',
             headers: { Authorization: `Bearer ${token}` },
           });
         } catch {}
-  
-        // 5) Clean the URL and go to Invoice
+
+        // 6) Clean URL & go invoice
         const url = new URL(window.location.href);
         url.searchParams.delete('payment');
         url.searchParams.delete('session_id');
         window.history.replaceState({}, '', url.toString());
-  
+
         router.push(`/Invoice?orderId=${encodeURIComponent(orderId)}`);
       } catch (e) {
         console.error(e);
@@ -384,12 +412,9 @@ const CartPage = () => {
         setIsLoading(false);
       }
     };
-  
-    run();
-     
-  }, []);
-  
 
+    run();
+  }, []);
 
   return (
     <div>
@@ -437,7 +462,7 @@ const CartPage = () => {
                 <h2 className="text-lg font-medium text-gray-900 mb-4">Your Cart</h2>
                 {cartItems.map((item) => (
                   <CartItem
-                    key={item.id}
+                    key={`${item.id}:${item.custom?.designId || item.custom?.previewUrl || 'BASE'}`}
                     item={item}
                     onQuantityChange={handleQuantityChange}
                     onRemove={handleRemoveItem}

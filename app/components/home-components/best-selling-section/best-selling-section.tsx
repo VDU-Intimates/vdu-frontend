@@ -24,8 +24,8 @@ type BestProduct = {
   photoUrl: string[];
   category: string;
   sizes: string[];
-  rating?: number;     // optional, for stars
-  totalSales?: number; // optional, if your API returns it
+  avgRating?: number;     // NEW: use schema fields
+  ratingCount?: number;   // NEW
 };
 
 function Stars({ value = 0 }: { value?: number }) {
@@ -42,10 +42,17 @@ function Stars({ value = 0 }: { value?: number }) {
   );
 }
 
+
+
+
 // small product card purpose-built for this section
 function BestSellingCard({ p }: { p: BestProduct }) {
   const priceText = Number.isFinite(p.price) ? `Rs.${p.price}` : "—";
   const defaultSize = p.sizes?.[0] || "M";
+
+
+ 
+
 
   return (
     <div className="w-full min-w-0 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300">
@@ -67,7 +74,7 @@ function BestSellingCard({ p }: { p: BestProduct }) {
 
         <p className="mt-1 text-xs text-gray-500">{p.category}</p>
         <div className="mt-2">
-          <Stars value={p.rating ?? 0} />
+          <Stars value={p.avgRating ?? 0} />
         </div>
 
         <div className="mt-3 flex items-center justify-between gap-3">
@@ -94,6 +101,7 @@ const BestSelling = () => {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
+
   useEffect(() => {
     let cancelled = false;
 
@@ -101,19 +109,11 @@ const BestSelling = () => {
       setLoading(true);
       setErr(null);
       try {
-        // Try a dedicated endpoint first
-        let res = await fetch(`${API_BASE}/api/products/best-selling?limit=4`);
-        if (!res.ok) {
-          // fallback: generic products sorted by totalSales desc
-          res = await fetch(`${API_BASE}/api/products?sort=-totalSales&limit=4`);
-        }
+        const res = await fetch(`${API_BASE}/api/products/top-rated?limit=4`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-        // Support either { data: [...] } or [...] shapes
         const raw = await res.json();
-        const data: BestProduct[] = Array.isArray(raw) ? raw : raw.data ?? [];
-
-        if (!cancelled) setItems(data);
+        const data = raw.data || [];
+        setItems(data);
       } catch (e: unknown) {
         if (!cancelled) setErr(getErrorMessage(e) || "Failed to load best selling products");
       } finally {
