@@ -1,21 +1,24 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Filter, ChevronsUpDown } from "lucide-react"; 
+import { Filter, ChevronsUpDown, Paintbrush } from "lucide-react"; 
 import AdminNavBar from "@/app/components/nav-bar/admin-nav-bar";
 import OrderItemRow from "../../components/order-components/order-item-row";
+import ReportDownloader from '../../components/reports/report-downloader';
 import { useSearchParams } from "next/navigation";
 
 // Define the possible order statuses
 type OrderStatus = 'Accepted' | 'Pending' | 'Cancelled' | 'Shipped' | 'Delivered';
-// Define the filter type, including 'All'
-type FilterStatus = OrderStatus | 'All';
+// The filter type now includes 'Customized'
+type FilterType = OrderStatus | 'All' | 'Customized';
 
+// The interface now expects the new field from the API
 interface OrderListItem {
   orderId: string;
   totalAmount: number;
   orderStatus: OrderStatus;
   date: string;
+  hasCustomizedItems: boolean; // This field is required from your API
 }
 
 const getAuthToken = (): string | null => {
@@ -30,7 +33,7 @@ const OrdersPage = () => {
   
   // State for the interactive UI
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<FilterStatus>('All');
+  const [statusFilter, setStatusFilter] = useState<FilterType>('All');
   const [sortOrder, setSortOrder] = useState<'Newest' | 'Oldest'>('Newest');
 
   const searchParams = useSearchParams();
@@ -56,23 +59,26 @@ const OrdersPage = () => {
     fetchAllOrders();
   }, []);
 
-  // useMemo will re-calculate the displayed orders only when the source data or filters change
+  // useMemo hook to efficiently filter and sort orders
   const filteredAndSortedOrders = useMemo(() => {
     const searchQuery = searchParams.get('search')?.toLowerCase() || '';
     let processedOrders = [...allOrders];
 
+    // Search filter
     if (searchQuery) {
       processedOrders = processedOrders.filter(order =>
         order.orderId.toLowerCase().includes(searchQuery)
       );
     }
 
-    // 1. Apply Status Filter
-    if (statusFilter !== 'All') {
+    // Status/Type filter
+    if (statusFilter === 'Customized') {
+      processedOrders = processedOrders.filter(order => order.hasCustomizedItems);
+    } else if (statusFilter !== 'All') {
       processedOrders = processedOrders.filter(order => order.orderStatus === statusFilter);
     }
 
-    // 2. Apply Date Sort
+    // Date sort
     processedOrders.sort((a, b) => {
       const dateA = new Date(a.date).getTime();
       const dateB = new Date(b.date).getTime();
@@ -86,21 +92,43 @@ const OrdersPage = () => {
     setSelectedOrderId(prevId => (prevId === orderId ? null : orderId));
   };
 
-  const filterButtons: FilterStatus[] = ['All', 'Pending', 'Accepted', 'Shipped', 'Delivered', 'Cancelled'];
-
   return (
     <div className="flex min-h-screen bg-gray-50">
       <div className="lg:block"><AdminNavBar /></div>
-      <main className="flex-1 ml-0 p-4 lg:p-6"> 
+      <main className="flex-1 ml-0 pt-16 lg:pt-0 p-4 lg:p-6"> 
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Orders</h1>
         </div>
+
+        <div className="mt-12 mb-6">
+          <ReportDownloader />
+        </div>
+        
         <div className="bg-white p-4 lg:p-6 rounded-lg shadow-md border border-gray-100">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
             <h2 className="text-lg font-semibold mb-3 sm:mb-0">Real-time Order list</h2>
             
-            {/* --- FILTER & SORT CONTROLS --- */}
+            {/* --- MODIFIED: Restored Dropdown UI --- */}
             <div className="flex items-center gap-4">
+              {/* Filter Dropdown */}
+              <div className="relative">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as FilterType)}
+                  className="appearance-none bg-gray-50 border border-gray-300 rounded-md py-2 pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                >
+                  <option value="All">Filter: All</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Accepted">Accepted</option>
+                  <option value="Shipped">Shipped</option>
+                  <option value="Delivered">Delivered</option>
+                  <option value="Cancelled">Cancelled</option>
+                  <option value="Customized">Customized</option> {/* The new option */}
+                </select>
+                <Filter className="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
+
+              {/* Sort Dropdown */}
               <div className="relative">
                 <select
                   value={sortOrder}
@@ -115,26 +143,8 @@ const OrdersPage = () => {
             </div>
           </div>
           
-          {/* Status Filter Buttons */}
-          <div className="flex flex-wrap items-center gap-2 mb-4 p-2 bg-gray-50 rounded-lg">
-            <Filter className="w-4 h-4 text-gray-500" />
-            {filterButtons.map(status => (
-              <button
-                key={status}
-                onClick={() => setStatusFilter(status)}
-                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                  statusFilter === status
-                    ? 'bg-blue-600 text-white shadow'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                {status}
-              </button>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-5 gap-4 pb-2 border-b-2 font-semibold text-xs text-gray-500 uppercase px-4">
-            {/* ... Header remains the same ... */}
+          <div className="hidden md:grid grid-cols-5 gap-4 pb-2 border-b-2 font-semibold text-xs text-gray-500 uppercase px-4">
+             {/* ... Header remains the same ... */}
           </div>
 
           <div>
