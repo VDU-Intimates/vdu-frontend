@@ -18,8 +18,7 @@ interface OrderItem {
 
 interface OrderDetails {
   date: string;
-  fName: string;
-  lName: string;
+  customerName: string;
   orderStatus: OrderStatus;
   discount: number;
   totalAmount: number;
@@ -148,7 +147,7 @@ const OrderDetailsCard = ({ order, items, orderId }: OrderDetailsCardProps) => {
       <div className="space-y-2 text-sm mb-6">
         <div className="font-medium text-lg">Order ID: <span className="font-semibold">{orderId}</span></div>
         <hr className="my-2"/>
-        <div className="font-medium">Customer: <span className="float-right font-normal">{order.fName} {order.lName}</span></div>
+        <div className="font-medium">Customer: <span className="float-right font-normal">{order.customerName}</span></div>
         <div className="font-medium">Order Placed: <span className="float-right font-normal">{new Date(order.date).toLocaleDateString()}</span></div>
         <hr className="my-3 border-dashed"/>
         <div className="font-medium">Subtotal: <span className="float-right font-normal">Rs. {subTotal.toLocaleString()}</span></div>
