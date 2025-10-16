@@ -6,6 +6,8 @@ import AdminNavBar from "@/app/components/nav-bar/admin-nav-bar";
 import OrderItemRow from "../../components/order-components/order-item-row";
 import ReportDownloader from '../../components/reports/report-downloader';
 import { useSearchParams } from "next/navigation";
+import FilterDropdown from "@/app/components/order-components/filter-dropdown";
+import SortDropdown from "@/app/components/order-components/sort-dropdown";
 
 // Define the possible order statuses
 type OrderStatus = 'Accepted' | 'Pending' | 'Cancelled' | 'Shipped' | 'Delivered';
@@ -110,36 +112,14 @@ const OrdersPage = () => {
             
             {/* --- MODIFIED: Restored Dropdown UI --- */}
             <div className="flex items-center gap-4">
-              {/* Filter Dropdown */}
-              <div className="relative">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as FilterType)}
-                  className="appearance-none bg-gray-50 border border-gray-300 rounded-md py-2 pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                >
-                  <option value="All">Filter: All</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Accepted">Accepted</option>
-                  <option value="Shipped">Shipped</option>
-                  <option value="Delivered">Delivered</option>
-                  <option value="Cancelled">Cancelled</option>
-                  <option value="Customized">Customized</option> {/* The new option */}
-                </select>
-                <Filter className="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              </div>
-
-              {/* Sort Dropdown */}
-              <div className="relative">
-                <select
-                  value={sortOrder}
-                  onChange={(e) => setSortOrder(e.target.value as 'Newest' | 'Oldest')}
-                  className="appearance-none bg-gray-50 border border-gray-300 rounded-md py-2 pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                >
-                  <option value="Newest">Sort: Newest</option>
-                  <option value="Oldest">Sort: Oldest</option>
-                </select>
-                <ChevronsUpDown className="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              </div>
+              <FilterDropdown 
+                currentFilter={statusFilter}
+                onFilterChange={setStatusFilter}
+              />
+              <SortDropdown 
+                currentSort={sortOrder}
+                onSortChange={setSortOrder}
+              />
             </div>
           </div>
           
