@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Home, Package, ShoppingCart, Users, LogOut, Search, Menu, X } from "lucide-react";
+import { Home, Package, ShoppingCart, Users, LogOut, Menu, X } from "lucide-react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import SearchBar from "../common-components/search-bar";
@@ -109,14 +109,19 @@ const AdminNavBar = () => {
         <div>
           <UserProfileSection />
           <nav className="flex flex-col space-y-2">
-            {menuItems.map((item) => (
-              <Link key={item.name} href={item.path}>
-                <div className="flex items-center space-x-2 px-3 py-2 w-full rounded-md transition hover:bg-[#f4e7cd]">
-                  {item.icon}
-                  <span>{item.name}</span>
-                </div>
-              </Link>
-            ))}
+            {menuItems.map((item) => {
+              const isActive = (pathname === '/' && item.path === '/Dashboard') || (item.path !== '/' && pathname.startsWith(item.path));
+              return (
+                <Link key={item.name} href={item.path}>
+                  <div className={`flex items-center space-x-2 px-3 py-2 w-full rounded-md transition hover:bg-[#f4e7cd] ${
+                    isActive ? 'bg-[#f4e7cd] font-semibold' : ''
+                  }`}>
+                    {item.icon}
+                    <span>{item.name}</span>
+                  </div>
+                </Link>
+              );
+            })}
           </nav>
         </div>
         <div>
@@ -130,22 +135,16 @@ const AdminNavBar = () => {
         </div>
       </div>
 
-      {/* Mobile Top Bar - THIS WAS MISSING! */}
+      {/* Mobile Top Bar */}
       <div className="lg:hidden h-16 bg-white shadow flex items-center px-4 justify-between fixed top-0 left-0 right-0 z-40">
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="p-2 rounded-md hover:bg-gray-100 transition"
         >
-          {isMobileMenuOpen ? (
-            <X className="h-6 w-6" />
-          ) : (
-            <Menu className="h-6 w-6" />
-          )}
+          {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
-        
         <h1 className="text-xl font-semibold">{currentPage}</h1>
-
-        <div className="w-8" /> {/* Spacer for centering */}
+        <div className="w-8" /> {/* Spacer */}
       </div>
 
       {/* Desktop Top Bar */}
@@ -154,7 +153,6 @@ const AdminNavBar = () => {
         style={{ left: "16rem", right: 0 }}
       >
         <h1 className="text-xl font-semibold">{currentPage}</h1>
-
         <SearchBar size="sm"/>
       </div>
 
@@ -178,14 +176,19 @@ const AdminNavBar = () => {
               <UserProfileSection />
             </div>
             <nav className="flex flex-col space-y-2">
-              {menuItems.map((item) => (
-                <Link key={item.name} href={item.path} onClick={closeMobileMenu}>
-                  <div className="flex items-center space-x-2 px-3 py-2 w-full rounded-md transition hover:bg-[#f4e7cd]">
-                    {item.icon}
-                    <span>{item.name}</span>
-                  </div>
-                </Link>
-              ))}
+              {menuItems.map((item) => {
+                const isActive = (pathname === '/' && item.path === '/Dashboard') || (item.path !== '/' && pathname.startsWith(item.path));
+                return (
+                  <Link key={item.name} href={item.path} onClick={closeMobileMenu}>
+                    <div className={`flex items-center space-x-2 px-3 py-2 w-full rounded-md transition hover:bg-[#f4e7cd] ${
+                      isActive ? 'bg-[#f4e7cd] font-semibold' : ''
+                    }`}>
+                      {item.icon}
+                      <span>{item.name}</span>
+                    </div>
+                  </Link>
+                );
+              })}
             </nav>
           </div>
           <div>
