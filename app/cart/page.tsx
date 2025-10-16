@@ -11,6 +11,7 @@ import DeliveringTo, { DeliveryInfo } from '../components/cart/delivering-to';
 import NavBar from '../components/nav-bar/nav-bar';
 import Footer from '../components/footer/footer';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
+import BackButton from '../components/common-components/back-button';
 
 const API_BASE = 'http://localhost:5000';
 
@@ -422,9 +423,7 @@ const CartPage = () => {
       <main className="min-h-screen bg-gray-50 p-4 font-poppins">
         <div className="max-w-5xl mx-auto">
           <div className="flex justify-between items-center mb-6">
-            <button onClick={() => router.back()} className="flex items-center text-gray-700 hover:text-gray-900">
-              <ArrowLeft className="w-4 h-4 mr-2" /> Continue Shopping
-            </button>
+            <BackButton label="Continue Shopping" />
             {cartItems.length > 0 && (
               <button
                 onClick={() =>
