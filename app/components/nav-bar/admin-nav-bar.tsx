@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Home, Package, ShoppingCart, Users, LogOut, Search, Menu, X } from "lucide-react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import SearchBar from "../common-components/search-bar";
 
 interface UserProfile {
   fName: string;
@@ -154,14 +155,7 @@ const AdminNavBar = () => {
       >
         <h1 className="text-xl font-semibold">{currentPage}</h1>
 
-        <div className="flex items-center w-full max-w-xs bg-gray-100 rounded-lg px-3 py-2">
-          <Search className="h-5 w-5 text-gray-500" />
-          <input
-            type="text"
-            placeholder="Search..."
-            className="ml-2 w-full bg-transparent focus:outline-none"
-          />
-        </div>
+        <SearchBar size="sm"/>
       </div>
 
       {/* Mobile Menu Overlay */}

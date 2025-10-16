@@ -4,7 +4,7 @@ import React from 'react'
 type primaryButtonProps = {
     context:string,
     icon?: LucideIcon; 
-    onClick: () => void; // function prop
+    onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
     type?: "button" | "submit" | "reset";
     className?: string; // Added the className prop here
 }

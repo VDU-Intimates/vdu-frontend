@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Filter, ChevronsUpDown } from "lucide-react"; 
 import AdminNavBar from "@/app/components/nav-bar/admin-nav-bar";
 import OrderItemRow from "../../components/order-components/order-item-row";
+import { useSearchParams } from "next/navigation";
 
 // Define the possible order statuses
 type OrderStatus = 'Accepted' | 'Pending' | 'Cancelled' | 'Shipped' | 'Delivered';
@@ -32,6 +33,8 @@ const OrdersPage = () => {
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('All');
   const [sortOrder, setSortOrder] = useState<'Newest' | 'Oldest'>('Newest');
 
+  const searchParams = useSearchParams();
+
   useEffect(() => {
     const fetchAllOrders = async () => {
       setLoading(true);
@@ -55,7 +58,14 @@ const OrdersPage = () => {
 
   // useMemo will re-calculate the displayed orders only when the source data or filters change
   const filteredAndSortedOrders = useMemo(() => {
+    const searchQuery = searchParams.get('search')?.toLowerCase() || '';
     let processedOrders = [...allOrders];
+
+    if (searchQuery) {
+      processedOrders = processedOrders.filter(order =>
+        order.orderId.toLowerCase().includes(searchQuery)
+      );
+    }
 
     // 1. Apply Status Filter
     if (statusFilter !== 'All') {
@@ -70,7 +80,7 @@ const OrdersPage = () => {
     });
 
     return processedOrders;
-  }, [allOrders, statusFilter, sortOrder]);
+  }, [allOrders, statusFilter, sortOrder, searchParams]);
 
   const handleOrderSelect = (orderId: string) => {
     setSelectedOrderId(prevId => (prevId === orderId ? null : orderId));
