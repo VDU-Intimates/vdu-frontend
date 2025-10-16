@@ -6,7 +6,6 @@ import { Home, Package, ShoppingCart, Users, LogOut, Search, Menu, X } from "luc
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 
-// Define an interface for the user data we expect from the API
 interface UserProfile {
   fName: string;
   lName: string;
@@ -20,16 +19,13 @@ const getAuthToken = (): string | null => {
 
 const AdminNavBar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  // State to hold the fetched user profile
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch user profile when the component mounts
   useEffect(() => {
     const fetchProfile = async () => {
       const token = getAuthToken();
       if (!token) {
-        // If no token, redirect to login
         window.location.href = "/Login";
         return;
       }
@@ -42,7 +38,6 @@ const AdminNavBar = () => {
         });
 
         if (!response.ok) {
-          // If token is invalid, log out
           throw new Error('Failed to fetch profile');
         }
 
@@ -50,7 +45,6 @@ const AdminNavBar = () => {
         setUserProfile(data);
       } catch (error) {
         console.error(error);
-        // Log out on any fetch error (e.g., expired token)
         handleLogout();
       } finally {
         setLoading(false);
@@ -77,10 +71,8 @@ const AdminNavBar = () => {
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
-  // A reusable component for the user profile section to avoid repeating code
   const UserProfileSection = () => {
     if (loading) {
-      // Skeleton loader while fetching data
       return (
         <div className="flex flex-col items-center mb-6 animate-pulse">
           <div className="h-20 w-20 rounded-full bg-gray-300 mb-2"></div>
@@ -91,20 +83,20 @@ const AdminNavBar = () => {
     }
 
     if (!userProfile) {
-      return null; // Or a fallback UI if profile fails to load but user is authenticated
+      return null;
     }
 
     return (
       <div className="flex flex-col items-center mb-6 text-center">
         <Image
-          src={userProfile.photoURL || "/assets/images/profile.jpg"} // Fallback image
+          src={userProfile.photoURL || "/assets/images/profile.jpg"}
           alt="ProfilePic"
           className="h-20 w-20 rounded-full object-cover mb-2"
           width={80}
           height={80}
         />
         <h2 className="text-lg font-semibold">{`${userProfile.fName} ${userProfile.lName}`}</h2>
-        <p className="text-sm text-gray-700 break-all">{userProfile.email}</p>
+        <p className="text-sm text-gray-700 break-all px-2">{userProfile.email}</p>
       </div>
     );
   };
@@ -119,40 +111,96 @@ const AdminNavBar = () => {
             {menuItems.map((item) => (
               <Link key={item.name} href={item.path}>
                 <div className="flex items-center space-x-2 px-3 py-2 w-full rounded-md transition hover:bg-[#f4e7cd]">
-                  {item.icon}<span>{item.name}</span>
+                  {item.icon}
+                  <span>{item.name}</span>
                 </div>
               </Link>
             ))}
           </nav>
         </div>
         <div>
-          <button onClick={handleLogout} /* ... */ >
-            <LogOut className="h-5 w-5" /><span>LOGOUT</span>
+          <button 
+            onClick={handleLogout}
+            className="flex items-center space-x-2 text-red-600 px-3 py-2 rounded-md hover:bg-red-100 transition w-full"
+          >
+            <LogOut className="h-5 w-5" />
+            <span>LOGOUT</span>
           </button>
         </div>
       </div>
 
-      {/* Mobile Top Bar */}
-      {/* ... (No changes needed here) ... */}
+      {/* Mobile Top Bar - THIS WAS MISSING! */}
+      <div className="lg:hidden h-16 bg-white shadow flex items-center px-4 justify-between fixed top-0 left-0 right-0 z-40">
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="p-2 rounded-md hover:bg-gray-100 transition"
+        >
+          {isMobileMenuOpen ? (
+            <X className="h-6 w-6" />
+          ) : (
+            <Menu className="h-6 w-6" />
+          )}
+        </button>
+        
+        <h1 className="text-xl font-semibold">{currentPage}</h1>
+
+        <div className="w-8" /> {/* Spacer for centering */}
+      </div>
+
+      {/* Desktop Top Bar */}
+      <div
+        className="hidden lg:flex h-16 bg-white shadow items-center px-6 justify-between fixed top-0 z-40"
+        style={{ left: "16rem", right: 0 }}
+      >
+        <h1 className="text-xl font-semibold">{currentPage}</h1>
+
+        <div className="flex items-center w-full max-w-xs bg-gray-100 rounded-lg px-3 py-2">
+          <Search className="h-5 w-5 text-gray-500" />
+          <input
+            type="text"
+            placeholder="Search..."
+            className="ml-2 w-full bg-transparent focus:outline-none"
+          />
+        </div>
+      </div>
+
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={closeMobileMenu}
+        />
+      )}
 
       {/* Mobile Sidebar */}
-      <div className={`lg:hidden fixed top-0 left-0 bottom-0 w-64 bg-[#e6d0a7] z-50 transform transition-transform duration-300 ease-in-out ${ isMobileMenuOpen ? "translate-x-0" : "-translate-x-full" }`}>
+      <div
+        className={`lg:hidden fixed top-0 left-0 bottom-0 w-64 bg-[#e6d0a7] z-50 transform transition-transform duration-300 ease-in-out ${
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
         <div className="h-full flex flex-col justify-between p-4">
           <div>
-            <UserProfileSection />
+            <div className="mt-4">
+              <UserProfileSection />
+            </div>
             <nav className="flex flex-col space-y-2">
               {menuItems.map((item) => (
                 <Link key={item.name} href={item.path} onClick={closeMobileMenu}>
                   <div className="flex items-center space-x-2 px-3 py-2 w-full rounded-md transition hover:bg-[#f4e7cd]">
-                    {item.icon}<span>{item.name}</span>
+                    {item.icon}
+                    <span>{item.name}</span>
                   </div>
                 </Link>
               ))}
             </nav>
           </div>
           <div>
-            <button onClick={handleLogout} /* ... */ >
-              <LogOut className="h-5 w-5" /><span>LOGOUT</span>
+            <button 
+              onClick={handleLogout}
+              className="flex items-center space-x-2 text-red-600 px-3 py-2 rounded-md hover:bg-red-100 transition w-full"
+            >
+              <LogOut className="h-5 w-5" />
+              <span>LOGOUT</span>
             </button>
           </div>
         </div>
