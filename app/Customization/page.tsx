@@ -347,17 +347,23 @@ const CustomizationPage = () => {
   async function loadDesigns() {
     setLoadingDesigns(true);
     try {
-      const res = await fetch(`${API_BASE}/api/designs`, {
+      // ✅ Fetch only the 5 most recent designs
+      const res = await fetch(`${API_BASE}/api/designs?limit=5`, {
         headers: { Authorization: `Bearer ${getToken()}` },
         cache: 'no-store',
       });
+  
       if (!res.ok) throw new Error(`List failed (${res.status})`);
+  
       const payload = await res.json();
       setDesigns(payload?.data || []);
     } catch (e) {
       console.error('[designs] error:', e);
-    } finally { setLoadingDesigns(false); }
+    } finally {
+      setLoadingDesigns(false);
+    }
   }
+  
   useEffect(() => { loadDesigns(); }, []);
 
   /** Save current canvas as a design and return the created document */
@@ -717,9 +723,10 @@ const CustomizationPage = () => {
                     <button
                       onClick={addCustomizedToCart}
                       disabled={btnBusy}
-                      className={`px-4 py-2 rounded-xl text-white font-semibold ${btnBusy ? 'bg-emerald-400' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+                      className={`w-fit h-[40px] px-3 border-2 font-bold rounded-2xl transition-all duration-300 shadow-md flex items-center justify-center gap-3 max-xl:py-6 max-xl:text-xs lg:text-sm cursor-pointer bg-light-green text-beige border-light-green hover:bg-beige hover:text-light-green hover:shadow-[0_4px_6px_rgba(0,0,0,0.3),0_0_15px_rgba(34,197,94,0.5)] ${btnBusy ? 'bg-emerald-400' : 'bg-emerald-600 '}`}
                     >
-                      {btnBusy ? 'ADDING…' : 'ADD TO CART'}
+                      {btnBusy ? 'ADDING…' : `ADD TO CART`}
+                      <ShoppingCart />
                     </button>
                   </div>
                 </div>
@@ -736,7 +743,7 @@ const CustomizationPage = () => {
                   <div className="text-sm text-gray-600">No designs yet.</div>
                 )}
 
-                {designs.map((d) => (
+                {designs.map((d,index) => (
                   <div key={d._id} className="w-full max-w-xl rounded-lg bg-white/60 p-4 sm:p-5 shadow-sm">
                     <div className="grid grid-cols-1 sm:grid-cols-[150px_1fr] gap-4 sm:gap-5 items-start">
                       <div className="relative h-[140px] w-full sm:w-[150px] overflow-hidden rounded-md">
@@ -758,6 +765,7 @@ const CustomizationPage = () => {
                             context="DELETE DESIGN"
                             icon={X}
                             combo="redTransparent"
+                            className='p-5'
                             onClick={async () => {
                               try {
                                 const res = await fetch(`${API_BASE}/api/designs/${d._id}`, {
@@ -771,11 +779,13 @@ const CustomizationPage = () => {
                             }}
                           />
                           <button
+                            key={index}
                             onClick={() => addExistingDesignToCart(d)}
                             disabled={btnBusyEx}
-                            className={`px-4 py-2 rounded-xl text-white font-semibold ${btnBusy ? 'bg-emerald-400' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+                            className={`w-fit h-[40px] p-5 border-2 font-bold rounded-2xl transition-all duration-300 shadow-md flex items-center justify-center gap-3 max-xl:py-6 max-xl:text-xs lg:text-sm cursor-pointer bg-light-green text-beige border-light-green hover:bg-beige hover:text-light-green hover:shadow-[0_4px_6px_rgba(0,0,0,0.3),0_0_15px_rgba(34,197,94,0.5)] ${btnBusy ? 'bg-emerald-400' : 'bg-emerald-600 '}`}
                           >
                             {btnBusyEx ? 'ADDING…' : 'ADD TO CART'}
+                            <ShoppingCart />
                           </button>
                         </div>
                       </div>
