@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import {
-  Star,
   ChevronLeft,
   ChevronRight,
   SlashIcon,
@@ -17,6 +16,7 @@ import Link from "next/link";
 import Footer from "../components/footer/footer";
 import NavBar from "../components/nav-bar/nav-bar";
 import Buttons from "../components/common-components/button";
+import Stars from "../components/common-components/stars";
 
 import {
   Breadcrumb,
@@ -27,6 +27,8 @@ import {
 } from "@/components/ui/breadcrumb";
 
 const API_BASE = "http://localhost:5000";
+
+type RatingSummary = { avgRating: number; ratingCount: number };
 
 /* ==========================
    Helper Functions & Types
@@ -71,6 +73,8 @@ type ApiProduct = {
   sizes: string[];
   category: "T-Shirt" | "Intimate";
   stock: number;
+  avgRating?: number;     // NEW
+  ratingCount?: number;   // NEW
 };
 
 /* ==========================
@@ -88,6 +92,9 @@ export default function ProductDetails() {
   const [color, setColor] = useState<string>("");
   const [size, setSize] = useState<string>("");
   const [activeIdx, setActiveIdx] = useState(0);
+
+  const [summary, setSummary] = useState<RatingSummary>({ avgRating: 0, ratingCount: 0 });
+  const [myRating, setMyRating] = useState<number>(0);
 
   /* ==========================
      Auth Load
@@ -110,9 +117,6 @@ export default function ProductDetails() {
     run();
   }, []);
 
-  /* ==========================
-     Product Load
-  =========================== */
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -124,7 +128,7 @@ export default function ProductDetails() {
         }
         setLoading(true);
         setErr(null);
-        const res = await fetch(`${API_BASE}/api/products/${encodeURIComponent(paramId)}`);
+        const res = await fetch(`${API_BASE}/api/products/${encodeURIComponent(paramId)}?includeRatings=1`);
         if (!res.ok) {
           setErr(res.status === 404 ? "Product not found" : `Failed to load product (HTTP ${res.status})`);
           setProduct(null);
@@ -135,6 +139,7 @@ export default function ProductDetails() {
           setProduct(doc);
           setColor(doc.colors?.[0] || "#EFDCC3");
           setSize(doc.sizes?.[0] || "M");
+          setSummary({ avgRating: doc.avgRating || 0, ratingCount: doc.ratingCount || 0 });
         }
       } catch (e: unknown) {
         if (!cancelled) {
@@ -149,6 +154,34 @@ export default function ProductDetails() {
       cancelled = true;
     };
   }, [paramId]);
+
+  /* ==========================
+     Product Load
+  =========================== */
+
+
+
+// handle user rating click
+async function handleRate(v: number) {
+  try {
+    if (!currentUser) {
+      alert("Please log in to rate.");
+      return;
+    }
+    setMyRating(v);
+    const resp = await fetch(`${API_BASE}/api/ratings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+      body: JSON.stringify({ productId: product?.productId, value: v }),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    setSummary({ avgRating: data.summary?.avgRating || 0, ratingCount: data.summary?.ratingCount || 0 });
+  } catch (err) {
+    console.error("rate error:", err);
+    alert("Failed to submit rating");
+  }
+}
 
   /* ==========================
      Thumbnails Setup
@@ -316,14 +349,32 @@ export default function ProductDetails() {
                 {/* Price */}
                 <div className="mb-6 space-y-1">
                   <p className="text-3xl font-bold text-gray-900 font-poppins">Rs.{product.price}</p>
+
+                  {/* Current average and count */}
                   <div className="flex items-center gap-3 text-sm">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-amber-700">
-                      <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                      4.2
-                    </span>
-                    <button className="rounded-full bg-indigo-50 px-2 py-1 text-indigo-700">
-                      27 Reviews
-                    </button>
+                    <Stars value={summary.avgRating} count={summary.ratingCount} />
+                  </div>
+
+                  {/* Clickable rating input */}
+                  <div className="flex items-center gap-1 mt-2">
+                    {Array.from({ length: 5 }).map((_, i) => {
+                      const v = i + 1;
+                      const filled = myRating ? v <= myRating : v <= Math.round(summary.avgRating);
+                      return (
+                        <button
+                          key={v}
+                          aria-label={`Rate ${v} star${v>1?"s":""}`}
+                          onClick={() => handleRate(v)}
+                          className="p-0.5"
+                          title={`Rate ${v}`}
+                        >
+                          <svg width="22" height="22" viewBox="0 0 24 24" className={filled ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}>
+                            <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.788 1.401 8.167L12 18.896l-7.335 3.869 1.401-8.167L.132 9.21l8.2-1.192z" />
+                          </svg>
+                        </button>
+                      );
+                    })}
+                    <span className="ml-2 text-xs text-gray-500">Tap to rate</span>
                   </div>
                 </div>
 

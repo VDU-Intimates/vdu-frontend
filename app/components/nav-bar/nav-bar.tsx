@@ -35,10 +35,14 @@ function getToken(): string {
 
 const NavBar = () => {
   const pathname = usePathname();
+  // Auth state
+  const [currentUser, setCurrentUser] = useState<ApiUser | null>(null);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   
   const [openTop, setOpenTop] = useState(false);
-  
+  const [cartCount, setCartCount] = useState<number>(0);
+
   // const newArrivalItems = ["Men", "Women", "Kids"];
   // const otherItems = ["Undergarment", "Casual Wear", "Night Wear"];
   // const bottomScrollRef = useRef<HTMLDivElement | null>(null);
@@ -48,9 +52,6 @@ const NavBar = () => {
   // const [dropdownC, setDropdownC] = useState(false);
   // const [dropdownD, setDropdownD] = useState(false);
 
-  // Auth state
-  const [currentUser, setCurrentUser] = useState<ApiUser | null>(null);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   // Account modal state (kept)
   // const [accountOpen, setAccountOpen] = useState(false);
@@ -75,40 +76,85 @@ const NavBar = () => {
   //  - the component mounts
   //  - the route changes (e.g., after navigating away from /Login)
   //  - a custom "auth:updated" event is dispatched (immediately after login)
+const refreshCartCount = async () => {
+    const token = getToken();
+    if (!token) {
+      setCartCount(0);
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/api/cart`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      // data.items is your cart array
+      const distinct = new Set<string>();
+      for (const it of (data?.items ?? [])) {
+        // be defensive: productId is your "business id", size might be undefined
+        const pid = String(it.productId ?? "");
+        const size = String(it.size ?? "");
+        distinct.add(`${pid}:${size}`);
+      }
+      setCartCount(distinct.size);
+    } catch {
+      setCartCount(0);
+    }
+  };
+
+  // Load user (and cart count) on mount, route change, and auth updates
   useEffect(() => {
     let alive = true;
 
     const loadMe = async () => {
       const token = getToken();
       if (!token) {
-        if (alive) setCurrentUser(null);
+        if (alive) {
+          setCurrentUser(null);
+          setCartCount(0);
+        }
         return;
       }
       try {
         const res = await fetch(`${API_BASE}/api/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) {
-          if (alive) setCurrentUser(null);
+          if (alive) {
+            setCurrentUser(null);
+            setCartCount(0);
+          }
           return;
         }
         const data: { user: ApiUser } = await res.json();
         if (alive) setCurrentUser(data.user);
       } catch {
         if (alive) setCurrentUser(null);
+      } finally {
+        // always refresh the cart count too
+        if (alive) refreshCartCount();
       }
     };
 
     loadMe();
 
-    const onAuthUpdated = () => loadMe(); // call this after login sets the token
+    const onAuthUpdated = () => {
+      loadMe();
+      refreshCartCount();
+    };
+    const onCartUpdated = () => refreshCartCount();
+
     window.addEventListener("auth:updated", onAuthUpdated as EventListener);
+    window.addEventListener("cart:updated", onCartUpdated as EventListener);
 
     return () => {
       alive = false;
       window.removeEventListener("auth:updated", onAuthUpdated as EventListener);
+      window.removeEventListener("cart:updated", onCartUpdated as EventListener);
     };
-  }, [pathname]);
+  }, [pathname]); // also re-check when route changes
 
   const displayFirstName =
     currentUser?.fName || (currentUser?.email ? currentUser.email.split("@")[0] : undefined);
@@ -207,7 +253,7 @@ const NavBar = () => {
                     "
                     aria-label="Items in cart"
                   >
-                    0
+                    {cartCount}
                   </span>
                 </span>
               </Link>

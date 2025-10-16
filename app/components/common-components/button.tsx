@@ -65,7 +65,7 @@ const Buttons = ({
     if (disabled) return;
 
     // Only run "add to cart" behavior if text implies so OR bulk items provided
-    const isAddToCart = items?.length || context.trim().toLowerCase().includes("add");
+    const isAddToCart = items?.length || context.trim().toLowerCase().includes("add to cart");
 
     if (!isAddToCart) return;
 
@@ -109,6 +109,7 @@ const Buttons = ({
           ? `${payload.items?.length} item(s) added to cart`
           : "Added to cart");
       toast.success(msg);
+      window.location.reload();
     } catch (err) {
       console.error("Add to cart failed:", err);
       toast.error("Add to Cart failed");

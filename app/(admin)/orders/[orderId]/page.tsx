@@ -1,31 +1,34 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import OrderDetailsCard from '../../../components/order-components/order-details-card'; // Adjust path if needed
+import OrderDetailsCard from '../../../components/order-components/order-details-card';
 
-// Main order details from GET /api/orders/:orderId
 interface OrderDetailsFromAPI {
-  price: number;
+  // whatever your API returns today:
+  price?: number;
   date: string;
-  fName: string;
-  lName: string;
+  fName?: string;
+  lName?: string;
   orderStatus: 'Accepted' | 'Pending' | 'Cancelled' | 'Shipped' | 'Delivered';
+  discount?: number;
+  totalAmount?: number;
+  customerName?: string; // some endpoints might already send this
 }
 
-// Item details from GET /api/orders/:orderId/items
 interface OrderItem {
   _id: string;
   name: string;
   quantity: number;
   unitPrice: number;
   productId: string;
-  photoUrl: string;
+  photoUrl: string | null;
+  isCustomized?: boolean;           // <-- new
+  customPreviewUrl?: string | null; // <-- new
 }
 
-const getAuthToken = (): string | null => {
-  return localStorage.getItem('access_token');
-};
+const getAuthToken = (): string | null => localStorage.getItem('access_token');
 
 const OrderDetailsPage = () => {
   const params = useParams();
@@ -39,11 +42,10 @@ const OrderDetailsPage = () => {
   useEffect(() => {
     if (!orderId) return;
 
-    const fetchAllOrderData = async () => {
+    (async () => {
       setLoading(true);
       setError(null);
       const token = getAuthToken();
-
       if (!token) {
         setError('Authentication error. Please log in again.');
         setLoading(false);
@@ -53,50 +55,51 @@ const OrderDetailsPage = () => {
       try {
         const [mainOrderResponse, itemsResponse] = await Promise.all([
           fetch(`http://localhost:5000/api/orders/${orderId}`, {
-            headers: { 'Authorization': `Bearer ${token}` },
+            headers: { Authorization: `Bearer ${token}` },
           }),
           fetch(`http://localhost:5000/api/orders/${orderId}/items`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-          })
+            headers: { Authorization: `Bearer ${token}` },
+          }),
         ]);
 
         if (!mainOrderResponse.ok || !itemsResponse.ok) {
           throw new Error('Failed to fetch complete order data.');
         }
 
-        const mainOrderData = await mainOrderResponse.json();
-        const itemsData = await itemsResponse.json();
-        
-        setOrder(mainOrderData);
-        setItems(itemsData);
+        const main = (await mainOrderResponse.json()) as OrderDetailsFromAPI;
+        const its = (await itemsResponse.json()) as OrderItem[];
 
+        setOrder(main);
+        setItems(its);
       } catch (err: any) {
-        setError(err.message);
+        setError(err.message || 'Failed to load order');
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchAllOrderData();
+    })();
   }, [orderId]);
 
-  if (loading) {
-    return <div className="flex justify-center items-center h-screen">Loading Order...</div>;
-  }
+  if (loading) return <div className="flex justify-center items-center h-screen">Loading Order...</div>;
+  if (error) return <div className="flex justify-center items-center h-screen text-red-500">{error}</div>;
+  if (!order) return <div className="flex justify-center items-center h-screen">Order not found.</div>;
 
-  if (error) {
-    return <div className="flex justify-center items-center h-screen text-red-500">{error}</div>;
-  }
-
-  if (!order) {
-    return <div className="flex justify-center items-center h-screen">Order not found.</div>;
-  }
+  // 🔧 Normalize the data shape for the card here:
+  const orderForCard = {
+    date: order.date,
+    customerName:
+      order.customerName ||
+      [order.fName, order.lName].filter(Boolean).join(' ').trim() ||
+      'N/A',
+    orderStatus: order.orderStatus,
+    discount: order.discount ?? 0,
+    totalAmount: order.totalAmount ?? order.price ?? 0,
+  };
 
   return (
     <main className="p-4 sm:p-6 lg:p-8">
       <h1 className="text-2xl font-bold mb-6">Order Details</h1>
       <div className="max-w-2xl mx-auto">
-        <OrderDetailsCard order={order} items={items} orderId={orderId} />
+        <OrderDetailsCard order={orderForCard} items={items} orderId={orderId} />
       </div>
     </main>
   );
