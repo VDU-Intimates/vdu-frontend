@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import NavBar from "../components/nav-bar/nav-bar";
 import Footer from "../components/footer/footer";
 import Image from "next/image";
+import BackButton from "../components/common-components/back-button";
 
 // --- TYPE DEFINITIONS ---
 // These types must reflect the data structure returned by the backend's getOrderInvoiceById
@@ -162,6 +163,7 @@ const Invoice = () => {
       <div className="min-h-screen bg-[#D9EAD6] font-poppins flex items-center justify-center p-6">
         <div className="bg-white w-full max-w-5xl shadow-xl rounded-xl p-8 text-sm">
           
+            <BackButton label="Back to Cart" className="self-start mb-4"/>
           {/* TOP HEADER SECTION */}
           <div className="flex justify-between pb-6 border-b border-gray-200">
             {/* Left: Company Details */}
