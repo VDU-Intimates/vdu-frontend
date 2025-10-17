@@ -97,13 +97,17 @@ const OrdersPage = () => {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <div className="lg:block"><AdminNavBar /></div>
-      <main className="flex-1 ml-0 pt-16 lg:pt-0 p-4 lg:p-6"> 
+      <main className="flex-1 ml-0 lg:ml-64 pt-16 p-4 lg:p-6"> 
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Orders</h1>
         </div>
 
         <div className="mt-12 mb-6">
-          <ReportDownloader />
+          <ReportDownloader 
+            title="Download Monthly Order Report"
+            apiEndpoint="/reports/monthly-orders"
+            fileNamePrefix="Order-Report"
+          />
         </div>
         
         <div className="bg-white p-4 lg:p-6 rounded-lg shadow-md border border-gray-100">
@@ -124,7 +128,6 @@ const OrdersPage = () => {
           </div>
           
           <div className="hidden md:grid grid-cols-5 gap-4 pb-2 border-b-2 font-semibold text-xs text-gray-500 uppercase px-4">
-             {/* ... Header remains the same ... */}
           </div>
 
           <div>

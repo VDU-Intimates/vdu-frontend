@@ -5,11 +5,25 @@ import toast from 'react-hot-toast';
 import { Download } from 'lucide-react';
 import PrimaryButton from '../common-components/primary-button';
 
+// Helper function to get the auth token
 const getAuthToken = (): string | null => {
   return localStorage.getItem('access_token');
 };
 
-const ReportDownloader = () => {
+// Define the props for our reusable component
+interface ReportDownloaderProps {
+  title: string;
+  apiEndpoint: string;
+  fileNamePrefix: string;
+  showDateSelectors?: boolean; // Optional: show date selectors, default to true
+}
+
+const ReportDownloader = ({ 
+  title, 
+  apiEndpoint, 
+  fileNamePrefix, 
+  showDateSelectors = true 
+}: ReportDownloaderProps) => {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
   const [month, setMonth] = useState(new Date().getMonth() + 1);
@@ -26,7 +40,13 @@ const ReportDownloader = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/reports/monthly-orders?year=${year}&month=${month}`, {
+      // 1. Build the URL dynamically based on props
+      let url = `http://localhost:5000/api${apiEndpoint}`;
+      if (showDateSelectors) {
+        url += `?year=${year}&month=${month}`;
+      }
+
+      const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
 
@@ -36,19 +56,23 @@ const ReportDownloader = () => {
       }
 
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
+      link.href = downloadUrl;
       
-      const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
-      // MODIFIED: Change the file extension to .csv
-      link.setAttribute('download', `Order-Report-${monthName}-${year}.csv`);
+      // 2. Build the filename dynamically based on props
+      let filename = `${fileNamePrefix}.csv`;
+      if (showDateSelectors) {
+        const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
+        filename = `${fileNamePrefix}-${monthName}-${year}.csv`;
+      }
+      link.setAttribute('download', filename);
       
       document.body.appendChild(link);
       link.click();
       
       link.parentNode?.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(downloadUrl);
       
       toast.success("Report download started!");
 
@@ -67,28 +91,34 @@ const ReportDownloader = () => {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md border">
-      <h3 className="text-lg font-semibold mb-4">Download Monthly Report</h3>
+      <h3 className="text-lg font-semibold mb-4">{title}</h3>
       <div className="flex flex-col sm:flex-row gap-4 items-center">
-        <select
-          value={month}
-          onChange={(e) => setMonth(parseInt(e.target.value))}
-          className="w-full sm:w-auto p-2 border rounded-md"
-        >
-          {months.map(m => <option key={m.value} value={m.value}>{m.name}</option>)}
-        </select>
-        <select
-          value={year}
-          onChange={(e) => setYear(parseInt(e.target.value))}
-          className="w-full sm:w-auto p-2 border rounded-md"
-        >
-          {years.map(y => <option key={y} value={y}>{y}</option>)}
-        </select>
+        
+        {/* 3. Conditionally render the date selectors */}
+        {showDateSelectors && (
+          <>
+            <select
+              value={month}
+              onChange={(e) => setMonth(parseInt(e.target.value))}
+              className="w-full sm:w-auto p-2 border rounded-md"
+            >
+              {months.map(m => <option key={m.value} value={m.value}>{m.name}</option>)}
+            </select>
+            <select
+              value={year}
+              onChange={(e) => setYear(parseInt(e.target.value))}
+              className="w-full sm:w-auto p-2 border rounded-md"
+            >
+              {years.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </>
+        )}
         
         <PrimaryButton
-          // MODIFIED: Update button text
           context={isLoading ? 'Generating...' : 'Download CSV'}
           icon={Download}
           onClick={handleDownload}
+          disabled={isLoading}
           className={`!h-10 !w-full sm:!w-auto ${isLoading ? 'opacity-50' : ''}`}
         />
       </div>

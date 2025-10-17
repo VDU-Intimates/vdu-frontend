@@ -174,7 +174,7 @@ export default function InventoryPage() {
   return (
     <div className="flex min-h-screen font-poppins bg-[#f4efe4]">
       <AdminNavBar />
-      <main className="flex-1 p-8">
+      <main className="lg:ml-64 flex-1 p-8">
         <div className="flex justify-end mt-15 mb-5">
           <Buttons context="Download Report" icon={Download} onClick={downloadCsv} />
         </div>
