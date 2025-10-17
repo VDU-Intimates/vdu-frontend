@@ -179,8 +179,10 @@ const NavBar = () => {
             </div>
           ) : (
             <Link href="/Login" className="login-link">
-              <p>Login / Sign Up</p>
+              <div className="flex gap-3 justify-center items-center">
+              <p className="underline">Login / Sign Up</p>
               <Image src="/assets/icons/account_circle.svg" alt="Account" width={32} height={32} />
+              </div>
             </Link>
           )}
         </div>
