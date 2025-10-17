@@ -16,8 +16,8 @@ type size = keyof typeof widths;
 interface SearchBarProps {
     size: size;
     placeholder?: string;
-    value: string; // The current search term, provided by the parent
-    onSearchChange: (query: string) => void; // A function to call when the text changes
+    value: string; // The parent component provides the value
+    onSearchChange: (query: string) => void; // The parent provides the function to handle changes
 }
 
 const SearchBar = ({ size, placeholder = "Search...", value, onSearchChange }: SearchBarProps) => {
@@ -37,8 +37,8 @@ const SearchBar = ({ size, placeholder = "Search...", value, onSearchChange }: S
             <input
                 ref={inputRef}
                 type="text"
-                value={value} // The value is now controlled by the parent
-                onChange={(e) => onSearchChange(e.target.value)} // Report changes to the parent
+                value={value}
+                onChange={(e) => onSearchChange(e.target.value)}
                 placeholder={placeholder}
                 className="w-full h-10 border-light-green outline-0 border-2 pr-20 pl-4 rounded-2xl
                            placeholder:text-sm font-bold placeholder:text-dark-green"
