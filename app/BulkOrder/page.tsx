@@ -491,26 +491,23 @@ export default function BulkOrders() {
     
     {getToken() !== '' ? (
       <div>
-        
+        <Link href="#">
         <Buttons
         context={`ADD TO CART`}
         icon={ShoppingCart}
         disabled={review.filter((it) => typeof it.productId === 'object' && it.productId && it.status === 'in_review').length === 0}
         items={bulkItems}
         />
+        </Link>
       </div>
       
     ) : (
       <Link href="/Login">
         <Buttons
-          context={`REVIEW TOTAL -  Rs. ${review
-            .filter((it) => typeof it.productId === 'object' && it.productId)
-            .reduce((sum, it) => sum + Number((it.productId as Product).price ?? 0) * it.qty, 0)
-            .toLocaleString()}`}
-          icon={ShoppingCart}
-          disabled={
-            review.filter((it) => typeof it.productId === 'object' && it.productId).length === 0
-          }
+        context={`ADD TO CART`}
+        icon={ShoppingCart}
+        disabled={review.filter((it) => typeof it.productId === 'object' && it.productId && it.status === 'in_review').length === 0}
+        items={bulkItems}
         />
       </Link>
     )}

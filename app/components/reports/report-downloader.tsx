@@ -5,6 +5,15 @@ import toast from 'react-hot-toast';
 import { Download } from 'lucide-react';
 import PrimaryButton from '../common-components/primary-button';
 
+
+function getErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "object" && err && "message" in err) {
+    return String((err as { message?: unknown }).message);
+  }
+  return "Something went wrong.";
+}
+
 const getAuthToken = (): string | null => {
   return localStorage.getItem('access_token');
 };
@@ -52,8 +61,8 @@ const ReportDownloader = () => {
       
       toast.success("Report download started!");
 
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error));
     } finally {
       setIsLoading(false);
     }

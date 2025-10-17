@@ -1,11 +1,19 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Filter, ChevronsUpDown, Paintbrush } from "lucide-react"; 
+import { Filter, ChevronsUpDown } from "lucide-react"; 
 import AdminNavBar from "@/app/components/nav-bar/admin-nav-bar";
 import OrderItemRow from "../../components/order-components/order-item-row";
 import ReportDownloader from '../../components/reports/report-downloader';
 import { useSearchParams } from "next/navigation";
+
+function getErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "object" && err && "message" in err) {
+    return String((err as { message?: unknown }).message);
+  }
+  return "Something went wrong.";
+}
 
 // Define the possible order statuses
 type OrderStatus = 'Accepted' | 'Pending' | 'Cancelled' | 'Shipped' | 'Delivered';
@@ -50,8 +58,8 @@ const OrdersPage = () => {
         if (!response.ok) throw new Error('Failed to fetch orders.');
         const data: OrderListItem[] = await response.json();
         setAllOrders(data);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        setError(getErrorMessage(err));
       } finally {
         setLoading(false);
       }

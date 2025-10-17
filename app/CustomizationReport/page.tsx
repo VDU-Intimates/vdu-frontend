@@ -3,24 +3,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import {
-  BarChart3,
-  Calendar,
-  Download,
-  FileText,
-  Images,
-  Layers3,
-  Loader2,
-  Package,
-  ShoppingCart,
-  Type as TypeIcon,
+  BarChart3, Calendar, Download, FileText, Images, Layers3, Loader2,
+  Package, ShoppingCart, Type as TypeIcon,
 } from "lucide-react";
 import NavBar from "../components/nav-bar/nav-bar";
 import Footer from "../components/footer/footer";
 import Buttons from "../components/common-components/button";
 
-/* =========================
-   Config + helpers
-========================= */
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:5000";
 
 function getToken(): string {
@@ -31,7 +20,6 @@ function getToken(): string {
     return "";
   }
 }
-
 function getErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
   if (typeof err === "object" && err && "message" in err) {
@@ -40,9 +28,6 @@ function getErrorMessage(err: unknown): string {
   return "Something went wrong.";
 }
 
-/* =========================
-   Types
-========================= */
 type Design = {
   _id: string;
   designUrl: string;
@@ -64,34 +49,28 @@ type BulkOrderItem = {
   productId: string;
   productName: string;
   quantity: number;
-  price: number; // unit price
+  price: number;
 };
-
 type BulkOrder = {
   _id: string;
   userId: string;
   items: BulkOrderItem[];
-  totalAmount: number; // final charged
+  totalAmount: number;
   status: "pending" | "processing" | "fulfilled" | "cancelled";
   createdAt: string;
 };
 
-/* =========================
-   Page
-========================= */
 export default function UserReportsPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
-  // raw data
   const [designs, setDesigns] = useState<Design[]>([]);
   const [orders, setOrders] = useState<BulkOrder[]>([]);
 
-  // date filters for CSV
-  const [dFrom, setDFrom] = useState(""); // designs
+  const [dFrom, setDFrom] = useState("");
   const [dTo, setDTo] = useState("");
-  const [oFrom, setOFrom] = useState(""); // orders
-  const [oTo, setOTo] = useState("");
+  // const [oFrom, setOFrom] = useState("");
+  // const [oTo, setOTo] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -99,7 +78,8 @@ export default function UserReportsPage() {
       setErr(null);
       try {
         const token = getToken();
-        // designs (uses your /api/designs from design-controller)
+
+        // ✅ ask for more than 5 so totals are accurate
         const dRes = await fetch(`${API_BASE}/api/designs?page=1&limit=1000`, {
           headers: { Authorization: `Bearer ${token}` },
           cache: "no-store",
@@ -109,7 +89,6 @@ export default function UserReportsPage() {
         const dList: Design[] = Array.isArray(dJson?.data) ? dJson.data : [];
         setDesigns(dList);
 
-        // bulk orders (new endpoint you’ll add below)
         const oRes = await fetch(`${API_BASE}/api/selections?limit=1000`, {
           headers: { Authorization: `Bearer ${token}` },
           cache: "no-store",
@@ -126,83 +105,53 @@ export default function UserReportsPage() {
     })();
   }, []);
 
-  /* =========================
-     Metrics (computed client-side)
-  ========================= */
   const designMetrics = useMemo(() => {
-    const count = designs.length;
-    const images = designs.reduce((acc, d) => acc + (d.imageUrls?.length ?? 0), 0);
-    const texts = designs.reduce((acc, d) => acc + (d.texts?.length ?? 0), 0);
-    const avgImages = count ? (images / count) : 0;
-    const avgTexts = count ? (texts / count) : 0;
-    const products = new Set(designs.map(d => (d.productName || "").trim()).filter(Boolean)).size;
-    const lastCreated = designs.length
-      ? new Date(Math.max(...designs.map(d => +new Date(d.createdAt)))).toISOString()
+    const list = designs || [];
+    const count = list.length;
+    const images = list.reduce((acc, d) => acc + (Array.isArray(d.imageUrls) ? d.imageUrls.length : 0), 0);
+    const texts  = list.reduce((acc, d) => acc + (Array.isArray(d.texts)     ? d.texts.length     : 0), 0);
+    const avgImages = count ? images / count : 0;
+    const avgTexts  = count ? texts  / count : 0;
+    const products  = new Set(list.map(d => (d.productName || "").trim()).filter(Boolean)).size;
+    const lastCreated = count
+      ? new Date(Math.max(...list.map(d => +new Date(d.createdAt)))).toISOString()
       : null;
 
     return { count, images, texts, avgImages, avgTexts, products, lastCreated };
   }, [designs]);
 
-  const orderMetrics = useMemo(() => {
-    const count = orders.length;
-    const totalSpent = orders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
-    const avgValue = count ? totalSpent / count : 0;
-    const totalItems = orders.reduce((acc, o) => acc + (o.items?.length ?? 0), 0);
-    const totalQty = orders.reduce(
-      (acc, o) => acc + (o.items || []).reduce((a, it) => a + (it.quantity || 0), 0),
-      0
-    );
-    const lastOrdered = orders.length
-      ? new Date(Math.max(...orders.map(o => +new Date(o.createdAt)))).toISOString()
-      : null;
+  // const orderMetrics = useMemo(() => {
+  //   const list = orders || [];
+  //   const count = list.length;
+  //   const totalSpent = list.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
+  //   const avgValue = count ? totalSpent / count : 0;
+  //   const totalItems = list.reduce((acc, o) => acc + ((o.items?.length) || 0), 0);
+  //   const totalQty   = list.reduce((acc, o) => acc + (o.items || []).reduce((a, it) => a + (it.quantity || 0), 0), 0);
+  //   const lastOrdered = count
+  //     ? new Date(Math.max(...list.map(o => +new Date(o.createdAt)))).toISOString()
+  //     : null;
 
-    // top product (by quantity)
-    const counter = new Map<string, number>();
-    for (const o of orders) {
-      for (const it of o.items || []) {
-        const key = it.productName || it.productId;
-        counter.set(key, (counter.get(key) || 0) + (it.quantity || 0));
-      }
-    }
-    let topProduct: { name: string; qty: number } | null = null;
-    for (const [name, qty] of counter.entries()) {
-      if (!topProduct || qty > topProduct.qty) topProduct = { name, qty };
-    }
+  //   const counter = new Map<string, number>();
+  //   for (const o of list) {
+  //     for (const it of o.items || []) {
+  //       const key = it.productName || it.productId;
+  //       counter.set(key, (counter.get(key) || 0) + (it.quantity || 0));
+  //     }
+  //   }
+  //   let topProduct: { name: string; qty: number } | null = null;
+  //   for (const [name, qty] of counter.entries()) {
+  //     if (!topProduct || qty > topProduct.qty) topProduct = { name, qty };
+  //   }
+  //   return { count, totalSpent, avgValue, totalItems, totalQty, lastOrdered, topProduct };
+  // }, [orders]);
 
-    return { count, totalSpent, avgValue, totalItems, totalQty, lastOrdered, topProduct };
-  }, [orders]);
-
-  /* =========================
-     CSV downloads
-  ========================= */
   async function downloadDesignsPdf() {
     try {
       const params = new URLSearchParams();
       if (dFrom) params.set("from", dFrom);
-      if (dTo) params.set("to", dTo);
-  
+      if (dTo)   params.set("to", dTo);
+
       const res = await fetch(`${API_BASE}/api/designs/report?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
-      if (!res.ok) throw new Error(`Download failed (${res.status})`);
-      const blob = await res.blob(); // PDF
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `my-designs-${new Date().toISOString().slice(0,16).replace(/[:T]/g,"-")}.pdf`;
-      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    } catch (e) {
-      alert(getErrorMessage(e));
-    }
-  }
-
-  async function downloadBulkOrdersCsv() {
-    try {
-      const params = new URLSearchParams();
-      if (oFrom) params.set("from", oFrom);
-      if (oTo) params.set("to", oTo);
-
-      const res = await fetch(`${API_BASE}/api/selections/report?${params.toString()}`, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       if (!res.ok) throw new Error(`Download failed (${res.status})`);
@@ -210,16 +159,30 @@ export default function UserReportsPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `my-bulk-orders-${new Date().toISOString().slice(0,16).replace(/[:T]/g,"-")}.csv`;
+      a.download = `my-designs-${new Date().toISOString().slice(0,16).replace(/[:T]/g,"-")}.pdf`;
       document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    } catch (e) {
-      alert(getErrorMessage(e));
-    }
+    } catch (e) { alert(getErrorMessage(e)); }
   }
 
-  /* =========================
-     UI
-  ========================= */
+  // async function downloadBulkOrdersCsv() {
+  //   try {
+  //     const params = new URLSearchParams();
+  //     if (oFrom) params.set("from", oFrom);
+  //     if (oTo)   params.set("to",   oTo);
+
+  //     const res = await fetch(`${API_BASE}/api/selections/report?${params.toString()}`, {
+  //       headers: { Authorization: `Bearer ${getToken()}` },
+  //     });
+  //     if (!res.ok) throw new Error(`Download failed (${res.status})`);
+  //     const blob = await res.blob();
+  //     const url = URL.createObjectURL(blob);
+  //     const a = document.createElement("a");
+  //     a.href = url;
+  //     a.download = `my-bulk-orders-${new Date().toISOString().slice(0,16).replace(/[:T]/g,"-")}.csv`;
+  //     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  //   } catch (e) { alert(getErrorMessage(e)); }
+  // }
+
   return (
     <div>
       <NavBar />
@@ -236,7 +199,7 @@ export default function UserReportsPage() {
             <div className="text-red-600">Error: {err}</div>
           ) : (
             <>
-              {/* ======== DESIGN STATS ======== */}
+              {/* DESIGN STATS */}
               <section className="mb-10">
                 <h2 className="text-xl font-bold mb-3 flex items-center gap-2">
                   <Images className="w-5 h-5" /> Design Details
@@ -262,7 +225,7 @@ export default function UserReportsPage() {
                     </h3>
                     <div className="flex items-center gap-2">
                       <DateInput label="From" value={dFrom} onChange={setDFrom} />
-                      <DateInput label="To" value={dTo} onChange={setDTo} />
+                      <DateInput label="To"   value={dTo}   onChange={setDTo} />
                       <Buttons context="Download Report" icon={Download} onClick={downloadDesignsPdf} />
                     </div>
                   </div>
@@ -283,12 +246,12 @@ export default function UserReportsPage() {
                           <tr key={d._id} className="border-t">
                             <td className="p-3">
                               <div className="relative w-16 h-16 rounded overflow-hidden border bg-white">
-                                <Image src={d.designUrl} alt="design" fill className="object-cover" />
+                                <Image src={d.designUrl || "/assets/images/placeholder-tshirt.jpg"} alt="design" fill className="object-cover" />
                               </div>
                             </td>
                             <td className="p-3">{d.productName || "—"}</td>
-                            <td className="p-3">{d.imageUrls?.length ?? 0}</td>
-                            <td className="p-3">{d.texts?.length ?? 0}</td>
+                            <td className="p-3">{Array.isArray(d.imageUrls) ? d.imageUrls.length : 0}</td>
+                            <td className="p-3">{Array.isArray(d.texts) ? d.texts.length : 0}</td>
                             <td className="p-3">{new Date(d.createdAt).toLocaleString()}</td>
                           </tr>
                         ))}
@@ -298,8 +261,8 @@ export default function UserReportsPage() {
                 </div>
               </section>
 
-              {/* ======== BULK ORDER STATS ======== */}
-              <section className="mb-10">
+              {/* BULK ORDER STATS */}
+              {/* <section className="mb-10">
                 <h2 className="text-xl font-bold mb-3 flex items-center gap-2">
                   <ShoppingCart className="w-5 h-5" /> Bulk Order Details
                 </h2>
@@ -322,7 +285,6 @@ export default function UserReportsPage() {
                   </span>
                 </div>
 
-                {/* Orders table */}
                 <div className="mt-6 rounded-xl bg-white shadow border">
                   <div className="p-4 flex items-center justify-between flex-wrap gap-3">
                     <h3 className="font-semibold flex items-center gap-2">
@@ -330,7 +292,7 @@ export default function UserReportsPage() {
                     </h3>
                     <div className="flex items-center gap-2">
                       <DateInput label="From" value={oFrom} onChange={setOFrom} />
-                      <DateInput label="To" value={oTo} onChange={setOTo} />
+                      <DateInput label="To"   value={oTo}   onChange={setOTo} />
                       <Buttons context="Download CSV" icon={Download} onClick={downloadBulkOrdersCsv} />
                     </div>
                   </div>
@@ -366,7 +328,7 @@ export default function UserReportsPage() {
                     </table>
                   </div>
                 </div>
-              </section>
+              </section> */}
             </>
           )}
         </div>
@@ -376,9 +338,6 @@ export default function UserReportsPage() {
   );
 }
 
-/* =========================
-   Small presentational bits
-========================= */
 function StatCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: React.ReactNode; sub?: string; }) {
   return (
     <div className="rounded-xl border bg-white p-4 shadow-sm">
