@@ -255,7 +255,7 @@ export default function AdminDashboard() {
     <div className="flex min-h-screen bg-[#f7f5ef]">
       <AdminNavBar />
 
-      <main className="flex-1 p-6 mt-20">
+      <main className="flex-1 p-6 mt-20 lg:ml-64">
         {err && (
           <Card className="border-rose-200 bg-rose-50 mb-6 rounded-2xl">
             <CardHeader>
