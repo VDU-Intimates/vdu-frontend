@@ -15,6 +15,7 @@ import {
 import AdminNavBar from "@/app/components/nav-bar/admin-nav-bar";
 import Buttons from "@/app/components/common-components/button";
 import toast from "react-hot-toast";
+import ReportDownloader from "@/app/components/reports/report-downloader";
 
 /* =========================
    Config & helpers
@@ -174,9 +175,14 @@ export default function InventoryPage() {
   return (
     <div className="flex min-h-screen font-poppins bg-[#f4efe4]">
       <AdminNavBar />
-      <main className="flex-1 p-8">
-        <div className="flex justify-end mt-15 mb-5">
-          <Buttons context="Download Report" icon={Download} onClick={downloadCsv} />
+      <main className="lg:ml-64 flex-1 p-8">
+        <div className="flex min-w-full mt-15 mb-5">
+          {/* <Buttons context="Download Report" icon={Download} onClick={downloadCsv} /> */}
+          <ReportDownloader 
+            title="Download Monthly Inventory Report"
+            apiEndpoint="/admin/products/report"
+            fileNamePrefix="Inventory-Report"
+          />
         </div>
 
         <div className="flex items-center justify-center mb-6">

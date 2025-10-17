@@ -6,6 +6,8 @@ import AdminNavBar from "@/app/components/nav-bar/admin-nav-bar";
 import OrderItemRow from "../../components/order-components/order-item-row";
 import ReportDownloader from '../../components/reports/report-downloader';
 import { useSearchParams } from "next/navigation";
+import FilterDropdown from "@/app/components/order-components/filter-dropdown";
+import SortDropdown from "@/app/components/order-components/sort-dropdown";
 
 function getErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -103,13 +105,17 @@ const OrdersPage = () => {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <div className="lg:block"><AdminNavBar /></div>
-      <main className="flex-1 ml-0 pt-16 lg:pt-0 p-4 lg:p-6"> 
+      <main className="flex-1 ml-0 lg:ml-64 pt-16 p-4 lg:p-6"> 
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Orders</h1>
         </div>
 
         <div className="mt-12 mb-6">
-          <ReportDownloader />
+          <ReportDownloader 
+            title="Download Monthly Order Report"
+            apiEndpoint="/reports/monthly-orders"
+            fileNamePrefix="Order-Report"
+          />
         </div>
         
         <div className="bg-white p-4 lg:p-6 rounded-lg shadow-md border border-gray-100">
@@ -118,41 +124,18 @@ const OrdersPage = () => {
             
             {/* --- MODIFIED: Restored Dropdown UI --- */}
             <div className="flex items-center gap-4">
-              {/* Filter Dropdown */}
-              <div className="relative">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as FilterType)}
-                  className="appearance-none bg-gray-50 border border-gray-300 rounded-md py-2 pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                >
-                  <option value="All">Filter: All</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Accepted">Accepted</option>
-                  <option value="Shipped">Shipped</option>
-                  <option value="Delivered">Delivered</option>
-                  <option value="Cancelled">Cancelled</option>
-                  <option value="Customized">Customized</option> {/* The new option */}
-                </select>
-                <Filter className="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              </div>
-
-              {/* Sort Dropdown */}
-              <div className="relative">
-                <select
-                  value={sortOrder}
-                  onChange={(e) => setSortOrder(e.target.value as 'Newest' | 'Oldest')}
-                  className="appearance-none bg-gray-50 border border-gray-300 rounded-md py-2 pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                >
-                  <option value="Newest">Sort: Newest</option>
-                  <option value="Oldest">Sort: Oldest</option>
-                </select>
-                <ChevronsUpDown className="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              </div>
+              <FilterDropdown 
+                currentFilter={statusFilter}
+                onFilterChange={setStatusFilter}
+              />
+              <SortDropdown 
+                currentSort={sortOrder}
+                onSortChange={setSortOrder}
+              />
             </div>
           </div>
           
           <div className="hidden md:grid grid-cols-5 gap-4 pb-2 border-b-2 font-semibold text-xs text-gray-500 uppercase px-4">
-             {/* ... Header remains the same ... */}
           </div>
 
           <div>
