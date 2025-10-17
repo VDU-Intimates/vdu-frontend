@@ -103,7 +103,11 @@ const OrdersPage = () => {
         </div>
 
         <div className="mt-12 mb-6">
-          <ReportDownloader />
+          <ReportDownloader 
+            title="Download Monthly Order Report"
+            apiEndpoint="/reports/monthly-orders"
+            fileNamePrefix="Order-Report"
+          />
         </div>
         
         <div className="bg-white p-4 lg:p-6 rounded-lg shadow-md border border-gray-100">
@@ -124,7 +128,6 @@ const OrdersPage = () => {
           </div>
           
           <div className="hidden md:grid grid-cols-5 gap-4 pb-2 border-b-2 font-semibold text-xs text-gray-500 uppercase px-4">
-             {/* ... Header remains the same ... */}
           </div>
 
           <div>
