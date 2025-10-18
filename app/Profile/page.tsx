@@ -79,7 +79,7 @@ export default function AccountPage() {
       setAddress(p.address || "");
 
       // 2) stats via /api/reports/account-stats
-      const stRes = await fetch(`${API_BASE}/api/reports/account-stats`, {
+      const stRes = await fetch(`${API_BASE}/api/auth/account-stats`, {
         headers: { Authorization: `Bearer ${getToken()}` },
         cache: "no-store",
       });
@@ -164,7 +164,7 @@ export default function AccountPage() {
 
   async function downloadPdf() {
     try {
-      const res = await fetch(`${API_BASE}/api/reports/account-summary`, {
+      const res = await fetch(`${API_BASE}/api/auth/account-summary`, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       if (!res.ok) throw new Error("Failed to generate PDF");

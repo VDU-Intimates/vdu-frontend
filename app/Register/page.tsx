@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState } from "react";
@@ -17,6 +18,7 @@ function getErrorMessage(err: unknown): string {
   }
   return "Something went wrong.";
 }
+
 
 // ✅ Password Validation Function
 function isPasswordStrong(password: string): boolean {
@@ -44,6 +46,69 @@ const Register = () => {
 
   const canSubmit =
     !!fName && !!lName && !!email && passwordValid && confirmValid;
+
+    async function loadGoogleScript(): Promise<void> {
+      if (typeof window !== "undefined" && (window as any).google?.accounts?.id) return;
+      await new Promise<void>((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = "https://accounts.google.com/gsi/client";
+        s.async = true;
+        s.defer = true;
+        s.onload = () => resolve();
+        s.onerror = () => reject(new Error("Google SDK failed to load"));
+        document.head.appendChild(s);
+      });
+    }
+    
+    async function handleGoogleSignIn(API_BASE: string) {
+      try {
+        await loadGoogleScript();
+        const google = (window as any).google;
+        const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+        if (!clientId) throw new Error("Missing NEXT_PUBLIC_GOOGLE_CLIENT_ID");
+    
+        google.accounts.id.initialize({
+          client_id: clientId,
+          callback: async (response: { credential?: string }) => {
+            try {
+              const idToken = response?.credential;
+              if (!idToken) throw new Error("No credential from Google");
+    
+              const res = await fetch(`${API_BASE}/api/auth/google`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id_token: idToken }),
+              });
+    
+              const json = await res.json().catch(() => ({}));
+              if (!res.ok) throw new Error(json?.message || "Google sign-in failed");
+    
+              if (json.token) localStorage.setItem("access_token", json.token);
+              // optional: toast.success("Signed in with Google");
+              window.location.assign("/");
+            } catch (e: unknown) {
+              // optional: toast.error(e?.message || "Google sign-in failed");
+              alert(getErrorMessage(e) || "Google sign-in failed");
+            }
+          },
+        });
+    
+        // Render the button into this div if present, else fallback to One-Tap prompt
+        const el = document.getElementById("google-register-btn");
+        if (el) {
+          google.accounts.id.renderButton(el, {
+            theme: "outline",
+            size: "large",
+            type: "standard",
+            shape: "pill",
+          });
+        } else {
+          google.accounts.id.prompt(); // One-Tap fallback
+        }
+      } catch (e: unknown) {
+        alert(getErrorMessage(e)|| "Google SDK failed to load");
+      }
+    }
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -251,20 +316,20 @@ const Register = () => {
               </p>
 
               <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  disabled
-                  className="rounded-xl border border-neutral-300 bg-white py-2 font-medium flex items-center justify-center gap-2 cursor-not-allowed"
-                  title="Google not configured (JWT auth in use)"
-                >
-                  <Image
-                    src="/assets/images/google-icon.png"
-                    alt="Google Icon"
-                    width={24}
-                    height={24}
-                  />
-                  <span>Google</span>
-                </button>
+              <div
+                id="google-register-btn"
+                className="rounded-xl border border-neutral-300 bg-white py-2 font-medium flex items-center justify-center gap-2 cursor-pointer"
+                onClick={() => handleGoogleSignIn(API_BASE)}
+                title="Continue with Google"
+              >
+                <Image
+                  src="/assets/images/google-icon.png"
+                  alt="Google Icon"
+                  width={24}
+                  height={24}
+                />
+                <span>Google</span>
+              </div>
 
                 <button
                   type="button"
