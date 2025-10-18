@@ -56,7 +56,9 @@ const UserDetailsSidebar = ({ user, onClose }: UserDetailsSidebarProps) => {
           
         </div>
 
-        <UserOrderHistory userId={user.id} />
+        {user.role !== 'Admin' && 
+          <UserOrderHistory userId={user.id} 
+        />}
 
         <div className="mt-6 pt-6 border-t border-gray-200">
           <PrimaryButton
