@@ -170,7 +170,6 @@ const AdminNavBar = () => {
         style={{ left: "16rem", right: 0 }}
       >
         <h1 className="text-xl font-semibold">{currentPage}</h1>
-        
         <SearchBar 
           size="sm"
           value={searchTerm}

@@ -33,14 +33,14 @@ const SearchBar = ({ size, placeholder = "Search...", value, onSearchChange }: S
     };
 
     return (
-        <div className={`relative ${widths[size]} max-md:w-[180px]`}>
+        <div className={`relative ${widths[size]} max-lg:w-[180px]`}>
             <input
                 ref={inputRef}
                 type="text"
                 value={value} // The value is now controlled by the parent
                 onChange={(e) => onSearchChange(e.target.value)} // Report changes to the parent
                 placeholder={placeholder}
-                className="w-full h-10 border-light-green outline-0 border-2 pr-20 pl-4 rounded-2xl
+                className="w-full h-10 border-light-green  outline-0 border-2 pr-20 pl-4 rounded-2xl
                            placeholder:text-sm font-bold placeholder:text-dark-green"
             />
             

@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import SearchBar from "../common-components/search-bar";
 
 // API base for your backend
@@ -35,6 +35,7 @@ function getToken(): string {
 
 const NavBar = () => {
   const pathname = usePathname();
+  const router = useRouter();
   // Auth state
   const [currentUser, setCurrentUser] = useState<ApiUser | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -42,6 +43,17 @@ const NavBar = () => {
   
   const [openTop, setOpenTop] = useState(false);
   const [cartCount, setCartCount] = useState<number>(0);
+
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // --- Search Handler ---
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault(); // Prevent the form from reloading the page
+    if (!searchTerm.trim()) return; // Don't search if the input is empty
+    
+    // Navigate to the All Products page with the search query
+    router.push(`/AllProducts?search=${encodeURIComponent(searchTerm)}`);
+  };
 
   // const newArrivalItems = ["Men", "Women", "Kids"];
   // const otherItems = ["Undergarment", "Casual Wear", "Night Wear"];
@@ -187,7 +199,13 @@ const refreshCartCount = async () => {
               className="min-w-[48px] min-h-[48px] w-[60px] h-[60px]"
             />
           </Link>
-          <SearchBar size="md" />
+          <form onSubmit={handleSearchSubmit}>
+            <SearchBar 
+              size="md" 
+              value={searchTerm} 
+              onSearchChange={setSearchTerm} 
+            />
+          </form>
         </div>
 
         <div
@@ -208,7 +226,7 @@ const refreshCartCount = async () => {
               <X size={32} />
             </button>
             <div className="flex relative flex-shrink-1 w-fit h-fit gap-10 items-center
-                       max-md:flex-col justify-center max-xl:gap-5">
+                             max-md:flex-col justify-center max-xl:gap-5">
               {[
                 { Label: "All Products", href: "/AllProducts" },
                 { Label: "Bulk Order", href: "/BulkOrder" },
@@ -223,9 +241,7 @@ const refreshCartCount = async () => {
                   <Link href={item.href}>{item.Label}&nbsp;</Link>
                 </p>
               ))}
-            </div>
-
-            {/* Cart */}
+              {/* Cart */}
             <div className="flex relative flex-shrink-0 w-fit h-fit cursor-pointer gap-5">
               <Link href="/cart" className="flex items-center gap-2 w-fit cursor-pointer">
                 {openTop && (
@@ -258,6 +274,9 @@ const refreshCartCount = async () => {
                 </span>
               </Link>
             </div>
+            </div>
+
+            
 
             {/* Auth section */}
             {currentUser ? (
