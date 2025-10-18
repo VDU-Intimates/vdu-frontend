@@ -12,6 +12,8 @@ import NavBar from '../components/nav-bar/nav-bar';
 import Footer from '../components/footer/footer';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import BackButton from '../components/common-components/back-button';
+import toast from 'react-hot-toast';
+import PrimaryButton from '../components/common-components/primary-button';
 
 const API_BASE = 'http://localhost:5000';
 
@@ -50,6 +52,7 @@ const CartPage = () => {
   const [cartItems, setCartItems] = useState<CartItemType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isClearing, setIsClearing] = useState(false);
 
   const [deliveryInfo, setDeliveryInfo] = useState<DeliveryInfo>({
     fullName: '',
@@ -59,12 +62,7 @@ const CartPage = () => {
     paymentMethod: 'cod',
   });
 
-  const getAuthToken = (): string | null =>
-    localStorage.getItem('authToken') ||
-    localStorage.getItem('token') ||
-    localStorage.getItem('access_token') ||
-    localStorage.getItem('jwt') ||
-    localStorage.getItem('userToken');
+  const getAuthToken = (): string | null =>localStorage.getItem('access_token');
 
   const handleDeliveryInputChange = (field: keyof DeliveryInfo, value: string) => {
     setDeliveryInfo((prev) => ({ ...prev, [field]: value }));
@@ -417,6 +415,30 @@ const CartPage = () => {
     run();
   }, []);
 
+  const handleClearCart = async () => {
+    setIsClearing(true);
+    const token = getAuthToken();
+    if (!token) {
+      toast.error("You need to be logged in.");
+      setIsClearing(false);
+      return;
+    }
+    try {
+      const response = await fetch(`${API_BASE}/api/cart/deleteAll`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Failed to clear cart.');
+      setCartItems([]);
+      toast.success("Cart cleared!");
+      window.dispatchEvent(new CustomEvent('cart:updated'));
+    } catch (error: any) {
+      toast.error(error.message || "Could not clear cart.");
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
   return (
     <div>
       <NavBar />
@@ -425,17 +447,14 @@ const CartPage = () => {
           <div className="flex justify-between items-center mb-6">
             <BackButton label="Continue Shopping" />
             {cartItems.length > 0 && (
-              <button
-                onClick={() =>
-                  fetch(`${API_BASE}/api/cart/deleteAll`, {
-                    method: 'DELETE',
-                    headers: { Authorization: `Bearer ${getAuthToken()}` },
-                  }).then(fetchCartData)
-                }
-                className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
-              >
-                <Trash2 className="w-4 h-4" /> Clear Cart
-              </button>
+              <PrimaryButton
+                variant="danger"
+                context={isClearing ? "Clearing..." : "Clear Cart"}
+                icon={Trash2}
+                onClick={handleClearCart}
+                disabled={isClearing}
+                className={`!h-10 !text-sm ${isClearing ? 'opacity-70' : ''}`}
+              />
             )}
           </div>
 
