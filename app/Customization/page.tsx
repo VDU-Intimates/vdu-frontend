@@ -791,21 +791,24 @@ const CustomizationPage = () => {
                   </div>
 
                   {/* Add to Cart */}
-                  <button
-                    onClick={addCustomizedToCart}
-                    disabled={btnBusyEx}
-                    className={`w-fit h-[40px] p-5 border-2 font-bold rounded-2xl transition-all 
-                                duration-300 shadow-md flex items-center justify-center gap-3 
-                                max-xl:py-6 max-xl:text-xs lg:text-sm cursor-pointer
-                                bg-light-green text-beige border-light-green
-                                hover:bg-beige hover:text-light-green hover:shadow-[0_4px_6px_rgba(0,0,0,0.3),0_0_15px_rgba(34,197,94,0.5)]
-                                disabled:bg-gray-400 disabled:border-gray-400 disabled:text-white
-                                disabled:cursor-not-allowed disabled:hover:bg-gray-400
-                                disabled:hover:text-white disabled:hover:shadow-none`}
-                  >
-                    {btnBusyEx ? 'ADDING…' : 'ADD TO CART'}
-                    <ShoppingCart />
-                  </button>
+                  <div className='flex justify-end mt-10'>
+                    <button
+                      onClick={addCustomizedToCart}
+                      disabled={btnBusyEx}
+                      className={`w-fit h-[40px] p-5 border-2 font-bold rounded-2xl transition-all 
+                                  duration-300 shadow-md flex items-center justify-center gap-3 
+                                  max-xl:py-6 max-xl:text-xs lg:text-sm cursor-pointer
+                                  bg-light-green text-beige border-light-green
+                                  hover:bg-beige hover:text-light-green hover:shadow-[0_4px_6px_rgba(0,0,0,0.3),0_0_15px_rgba(34,197,94,0.5)]
+                                  disabled:bg-gray-400 disabled:border-gray-400 disabled:text-white
+                                  disabled:cursor-not-allowed disabled:hover:bg-gray-400
+                                  disabled:hover:text-white disabled:hover:shadow-none`}
+                    >
+                      {btnBusyEx ? 'ADDING…' : 'ADD TO CART'}
+                      <ShoppingCart />
+                    </button>
+                  </div>
+                  
                 </div>
               </div>
             </div>

@@ -307,7 +307,7 @@ const Register = () => {
                 Or Sign up with
               </p>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3">
               <div
                 id="google-register-btn"
                 className="rounded-xl border border-neutral-300 bg-white py-2 font-medium flex items-center justify-center gap-2 cursor-pointer"
@@ -322,21 +322,6 @@ const Register = () => {
                 />
                 <span>Google</span>
               </div>
-
-                <button
-                  type="button"
-                  disabled
-                  className="rounded-xl border border-neutral-300 bg-white py-2 font-medium flex items-center justify-center gap-2 cursor-not-allowed"
-                  title="Facebook not configured"
-                >
-                  <Image
-                    src="/assets/images/facebook-icon.png"
-                    alt="Facebook Icon"
-                    width={24}
-                    height={24}
-                  />
-                  <span>Facebook</span>
-                </button>
               </div>
 
               {msg && (

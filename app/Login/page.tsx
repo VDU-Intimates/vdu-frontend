@@ -406,33 +406,21 @@ const Login: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                  <div
-                    id="google-login-btn"
-                    className="rounded-xl border border-neutral-300 bg-white py-2 font-medium flex items-center justify-center gap-2 cursor-pointer"
-                    onClick={() => handleGoogleSignIn(API_BASE)}
-                    title="Continue with Google"
-                  >
-                    <Image
-                      src="/assets/images/google-icon.png"
-                      alt="Google Icon"
-                      width={24}
-                      height={24}
-                    />
-                    <span>Google</span>
-                  </div>
-
-                    <button
-                      type="button"
-                      disabled
-                      className="rounded-xl border border-neutral-300 bg-white py-2 font-medium flex items-center justify-center gap-2 cursor-not-allowed"
-                      title="Facebook not configured"
+                  <div className="grid grid-cols-1 gap-3">
+                    <div
+                      id="google-login-btn"
+                      className="rounded-xl border border-neutral-300 bg-white py-2 font-medium flex items-center justify-center gap-2 cursor-pointer"
+                      onClick={() => handleGoogleSignIn(API_BASE)}
+                      title="Continue with Google"
                     >
-                      <span className="inline-block h-5 w-5 rounded-full bg-neutral-300" >
-                        <Image src="/assets/images/facebook-icon.png" alt="Google Icon" width={24} height={24}/>
-                      </span>
-                      <span>Facebook</span>
-                    </button>
+                      <Image
+                        src="/assets/images/google-icon.png"
+                        alt="Google Icon"
+                        width={24}
+                        height={24}
+                      />
+                      <span>Google</span>
+                    </div>
                   </div>
 
                   {msg && <p className="text-center text-sm mt-2 text-neutral-700">{msg}</p>}
