@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
@@ -51,6 +52,67 @@ const Login: React.FC = () => {
   const [cooldown, setCooldown] = useState(0);
   const cooldownTimerRef = useRef<number | null>(null);
   const cooldownEndRef = useRef<number | null>(null);
+
+  async function loadGoogleScript(): Promise<void> {
+    if (typeof window !== "undefined" && (window as any).google?.accounts?.id) return;
+    await new Promise<void>((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = "https://accounts.google.com/gsi/client";
+      s.async = true;
+      s.defer = true;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error("Google SDK failed to load"));
+      document.head.appendChild(s);
+    });
+  }
+  
+  async function handleGoogleSignIn(API_BASE: string) {
+    try {
+      await loadGoogleScript();
+      const google = (window as any).google;
+      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+      if (!clientId) throw new Error("Missing NEXT_PUBLIC_GOOGLE_CLIENT_ID");
+  
+      google.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (response: { credential?: string }) => {
+          try {
+            const idToken = response?.credential;
+            if (!idToken) throw new Error("No credential from Google");
+  
+            const res = await fetch(`${API_BASE}/api/auth/google`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id_token: idToken }),
+            });
+  
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(json?.message || "Google sign-in failed");
+  
+            if (json.token) localStorage.setItem("access_token", json.token);
+            // Admin/non-admin redirection stays same as your email/password flow
+            window.location.assign("/");
+          } catch (e: unknown) {
+            alert(getErrorMessage(e) || "Google sign-in failed");
+          }
+        },
+      });
+  
+      const el = document.getElementById("google-login-btn");
+      if (el) {
+        google.accounts.id.renderButton(el, {
+          theme: "outline",
+          size: "large",
+          type: "standard",
+          shape: "pill",
+        });
+      } else {
+        google.accounts.id.prompt();
+      }
+    } catch (e: unknown) {
+      alert(getErrorMessage(e) || "Google SDK failed to load");
+    }
+  }
 
   // cleanup on unmount
   useEffect(() => {
@@ -350,17 +412,20 @@ const Login: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      disabled
-                      className="rounded-xl border border-neutral-300 bg-white py-2 font-medium flex items-center justify-center gap-2 cursor-not-allowed"
-                      title="Google not configured (JWT auth in use)"
-                    >
-                      <span className="inline-block h-5 w-5 rounded-full">
-                        <Image src="/assets/images/google-icon.png" alt="Google Icon" width={24} height={24}/>
-                      </span>
-                      <span>Google</span>
-                    </button>
+                  <div
+                    id="google-login-btn"
+                    className="rounded-xl border border-neutral-300 bg-white py-2 font-medium flex items-center justify-center gap-2 cursor-pointer"
+                    onClick={() => handleGoogleSignIn(API_BASE)}
+                    title="Continue with Google"
+                  >
+                    <Image
+                      src="/assets/images/google-icon.png"
+                      alt="Google Icon"
+                      width={24}
+                      height={24}
+                    />
+                    <span>Google</span>
+                  </div>
 
                     <button
                       type="button"
@@ -440,9 +505,7 @@ const Login: React.FC = () => {
 
                       {otpMessage && <div className="text-sm text-gray-700 mt-3">{otpMessage}</div>}
 
-                      <div className="mt-4 w-full text-xs text-gray-400 text-center">
-                        Note: API endpoints <code>/api/auth/request-otp</code> and <code>/api/auth/verify-otp</code> expected.
-                      </div>
+                      
                     </div>
                   </div>
                 </div>
