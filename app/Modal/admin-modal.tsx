@@ -5,80 +5,107 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { X, Eye, EyeOff } from 'lucide-react';
 import PrimaryButton from '@/app/components/common-components/primary-button';
-import { User } from '../(admin)/users/types'; 
+import { User } from '../(admin)/users/types'; // Adjust this import path as needed
+
+const getAuthToken = (): string | null => localStorage.getItem("access_token");
+
+// ✅ Password Validation Function (copied from Register.tsx)
+function isPasswordStrong(password: string): boolean {
+  const regex =
+    /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*()[\]{};:'",.<>?/\\|`~=_+-]).{10,}$/;
+  return regex.test(password);
+}
 
 interface AdminUserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void; // Renamed from onAdminCreated
-  userToEdit: User | null; // <-- New prop to pass user data for editing
+  onSuccess: () => void;
+  userToEdit: User | null;
 }
 
-const getAuthToken = (): string | null => localStorage.getItem("access_token");
-
 const AdminUserModal: React.FC<AdminUserModalProps> = ({ isOpen, onClose, onSuccess, userToEdit }) => {
-  // --- 1. Determine mode and set dynamic text ---
   const isEditMode = Boolean(userToEdit);
   const title = isEditMode ? "Update Admin Account" : "Create New Admin";
   const submitText = isEditMode ? "Update Account" : "Create Account";
-  const passwordLabel = isEditMode ? "New Password (optional)" : "Password";
-
+  
   const [fName, setFName] = useState('');
   const [lName, setLName] = useState('');
   const [email, setEmail] = useState('');
+  
+  // --- New states for password and validation ---
   const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // --- 2. Add useEffect to populate form in Edit Mode ---
+  // --- Real-time validation logic ---
+  const passwordValid = isPasswordStrong(password);
+  const confirmValid = password === confirm;
+
+  const commonValid = !!fName && !!lName && !!email;
+  let canSubmit;
+
+  if (isEditMode) {
+    // In edit mode, password is optional.
+    // But if provided, it must be strong and confirmed.
+    const passwordPartValid = (password.length === 0 && confirm.length === 0) || (passwordValid && confirmValid);
+    canSubmit = commonValid && passwordPartValid;
+  } else {
+    // In create mode, all fields (including a valid password) are required.
+    canSubmit = commonValid && password.length > 0 && passwordValid && confirmValid;
+  }
+  // --- End of validation logic ---
+
   useEffect(() => {
     if (isOpen) {
       if (isEditMode && userToEdit) {
-        // Split the full name back into first and last
+        // Populate form for editing
         const nameParts = userToEdit.name.split(' ');
         setFName(nameParts[0] || '');
-        setLName(nameParts.slice(1).join(' ') || ''); // Handles names with more than 2 parts
+        setLName(nameParts.slice(1).join(' ') || '');
         setEmail(userToEdit.email);
-        setPassword(''); // Always clear password field on open
       } else {
-        // Reset form for Create Mode
+        // Reset form for creating
         setFName('');
         setLName('');
         setEmail('');
-        setPassword('');
       }
-      setError(null); // Clear errors on open
+      // Reset fields for both modes on open
+      setPassword('');
+      setConfirm('');
+      setError(null);
+      setShowPassword(false);
+      setShowConfirm(false);
     }
-  }, [userToEdit, isEditMode, isOpen]); // Rerun when modal is opened
+  }, [userToEdit, isEditMode, isOpen]);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-
-    // In edit mode, password is optional
-    if (!fName || !lName || !email || (!isEditMode && !password)) {
-      setError("Please fill in all required fields.");
+    
+    // Button's 'disabled' state handles this, but as a fallback:
+    if (!canSubmit) {
+      setError("Please fix the errors in the form.");
       return;
     }
 
+    setError(null);
     setIsLoading(true);
     const toastId = toast.loading(isEditMode ? 'Updating account...' : 'Creating account...');
     const token = getAuthToken();
 
-    // --- 3. Prepare data and API call ---
     const data: any = { fName, lName, email };
-    // Only send password if it's not empty
+    // Only send password if it's not empty (applies to both create/edit)
     if (password) {
       data.password = password;
     }
     
     try {
       if (isEditMode) {
-        // --- UPDATE (PATCH) ---
         await axios.patch(
           `http://localhost:5000/api/auth/users/${userToEdit?.id}`,
           data,
@@ -86,7 +113,6 @@ const AdminUserModal: React.FC<AdminUserModalProps> = ({ isOpen, onClose, onSucc
         );
         toast.success('Admin account updated!', { id: toastId });
       } else {
-        // --- CREATE (POST) ---
         await axios.post(
           'http://localhost:5000/api/auth/users/create-admin',
           data,
@@ -118,65 +144,119 @@ const AdminUserModal: React.FC<AdminUserModalProps> = ({ isOpen, onClose, onSucc
           <X size={24} />
         </button>
 
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">{title}</h2> {/* Dynamic Title */}
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">{title}</h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* --- FORM --- */}
+        <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
           <div className="flex gap-4">
-            {/* First Name */}
             <div className="flex-1">
-              <label htmlFor="fName" className="block text-sm font-medium text-gray-700">First Name</label>
+              <label htmlFor="fName" className="block text-sm font-medium text-gray-700 mb-1.5">First Name</label>
               <input
                 id="fName"
                 type="text"
                 value={fName}
                 onChange={(e) => setFName(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                placeholder="Enter first name"
+                className="block w-full px-3 py-2.5 rounded-lg border border-gray-300 shadow-sm text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400"
               />
             </div>
-            {/* Last Name */}
             <div className="flex-1">
-              <label htmlFor="lName" className="block text-sm font-medium text-gray-700">Last Name</label>
+              <label htmlFor="lName" className="block text-sm font-medium text-gray-700 mb-1.5">Last Name</label>
               <input
                 id="lName"
                 type="text"
                 value={lName}
                 onChange={(e) => setLName(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                placeholder="Enter last name"
+                className="block w-full px-3 py-2.5 rounded-lg border border-gray-300 shadow-sm text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400"
               />
             </div>
           </div>
 
-          {/* Email */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email Address</label>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">Email Address</label>
             <input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="name@example.com"
+              className="block w-full px-3 py-2.5 rounded-lg border border-gray-300 shadow-sm text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400"
             />
           </div>
 
-          {/* Password */}
+          {/* --- PASSWORD FIELD + VALIDATION --- */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">{passwordLabel}</label> {/* Dynamic Label */}
-            <div className="relative mt-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              {isEditMode ? "New Password (optional)" : "Password"}
+            </label>
+            <div className="relative">
               <input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                className={`w-full px-3 py-2.5 pr-10 rounded-lg border shadow-sm text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:border-transparent ${
+                  password.length > 0 && !passwordValid
+                    ? "border-red-300 focus:ring-red-500 hover:border-red-400"
+                    : "border-gray-300 focus:ring-indigo-500 hover:border-gray-400"
+                }`}
               />
               <button
                 type="button"
-                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500"
                 onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
               >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+
+            {/* Password Requirements Display */}
+            {password.length > 0 && !passwordValid && (
+              <div className="mt-2 text-xs text-red-500 space-y-1">
+                <p>Password must include:</p>
+                <ul className="list-disc ml-4">
+                  <li>At least 10 characters</li>
+                  <li>One uppercase letter (A–Z)</li>
+                  <li>One lowercase letter (a–z)</li>
+                  <li>One number (0–9)</li>
+                  <li>One special character (!@#$%^&*...)</li>
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* --- CONFIRM PASSWORD FIELD + VALIDATION --- */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Confirm password
+            </label>
+            <div className="relative">
+              <input
+                type={showConfirm ? "text" : "password"}
+                placeholder="Re-type your password"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                className={`w-full px-3 py-2.5 pr-10 rounded-lg border shadow-sm text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:border-transparent ${
+                  confirm.length > 0 && !confirmValid
+                    ? "border-red-300 focus:ring-red-500 hover:border-red-400"
+                    : "border-gray-300 focus:ring-indigo-500 hover:border-gray-400"
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(!showConfirm)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+
+            {confirm.length > 0 && !confirmValid && (
+              <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1">
+                <span className="font-medium">⚠</span> Passwords do not match.
+              </p>
+            )}
           </div>
 
           {/* Error Message */}
@@ -186,7 +266,7 @@ const AdminUserModal: React.FC<AdminUserModalProps> = ({ isOpen, onClose, onSucc
             </div>
           )}
 
-          {/* Action Buttons */}
+          {/* --- ACTION BUTTONS --- */}
           <div className="flex justify-end gap-3 pt-4">
             <PrimaryButton
               type="button"
@@ -199,7 +279,7 @@ const AdminUserModal: React.FC<AdminUserModalProps> = ({ isOpen, onClose, onSucc
               type="submit"
               variant="primary"
               context={submitText}
-              disabled={isLoading}
+              disabled={!canSubmit || isLoading}
             />
           </div>
         </form>
