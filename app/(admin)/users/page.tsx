@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import axios, { AxiosError } from "axios";
 import toast, { Toaster } from 'react-hot-toast';
 import { useSearchParams } from "next/navigation";
+import { Plus, Edit } from "lucide-react"; // 1. Import 'Edit' icon
 
 import { User } from "./types";
 import AdminNavBar from "@/app/components/nav-bar/admin-nav-bar";
@@ -11,7 +12,10 @@ import UserList from "../../components/users-admin-panel/user-list";
 import UserDetailsSidebar from "../../components/users-admin-panel/user-sidebar";
 import LoadingSpinner from "../../components/common-components/loading-spinner";
 import RoleFilterDropdown, { RoleType } from "../../components/users-admin-panel/role-dropdown";
-import ReportDownloader from "../../components/reports/report-downloader"; // 1. Import the downloader component
+import ReportDownloader from "../../components/reports/report-downloader";
+import PrimaryButton from "@/app/components/common-components/primary-button";
+// 2. Import the renamed modal (assuming you renamed the file)
+import AdminUserModal from "@/app/Modal/admin-modal"; 
 
 // Helper function to get the auth token
 const getAuthToken = (): string | null => localStorage.getItem("access_token");
@@ -24,7 +28,11 @@ const UserManagementPage = () => {
   // State for UI interactions
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [roleFilter, setRoleFilter] = useState<RoleType>('All');
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
+  // 3. Add state to track which user is being edited
+  const [userToEdit, setUserToEdit] = useState<User | null>(null);
+
   // Hook to read search params from the URL
   const searchParams = useSearchParams();
 
@@ -134,6 +142,25 @@ const UserManagementPage = () => {
     ), { duration: 6000, icon: '🤔' });
   };
 
+  // 4. Renamed handler for when modal succeeds (create or update)
+  const handleAdminSuccess = () => {
+    setIsModalOpen(false); // Close the modal
+    setUserToEdit(null); // Clear the user being edited
+    fetchAllUsers(); // Refresh the user list
+  };
+
+  // 5. Add handler to open modal in "Edit Mode"
+  const handleOpenEditModal = (user: User) => {
+    setUserToEdit(user);
+    setIsModalOpen(true);
+  };
+
+  // 6. Add handler to open modal in "Create Mode"
+  const handleOpenCreateModal = () => {
+    setUserToEdit(null); // Ensure no user is selected
+    setIsModalOpen(true);
+  };
+
   return (
     <div className="flex h-screen font-railway bg-[#F8F4EB]">
       <Toaster position="top-center" reverseOrder={false} />
@@ -143,15 +170,22 @@ const UserManagementPage = () => {
         {/* Page Header */}
         <div className="flex justify-between items-center flex-shrink-0">
           <h1 className="text-3xl font-bold">Users</h1>
+          {/* 7. Update button's onClick handler */}
+          <PrimaryButton
+            variant="primary"
+            context="Create Admin"
+            icon={Plus} 
+            onClick={handleOpenCreateModal} // Use new handler
+          />
         </div>
 
-        {/* 2. Add the Report Downloader component here */}
+        {/* Report Downloader component */}
         <div className="flex-shrink-0">
           <ReportDownloader
             title="Download User Report"
             apiEndpoint="/reports/all-users"
             fileNamePrefix="User-Report"
-            showDateSelectors={false} // This prop hides the month/year selectors
+            showDateSelectors={false}
           />
         </div>
 
@@ -171,10 +205,12 @@ const UserManagementPage = () => {
                     onFilterChange={setRoleFilter} 
                   />
                 </div>
+                {/* 8. Pass the onEditUser prop to your UserList */}
                 <UserList 
                   users={filteredUsers}
                   onViewUser={setSelectedUser} 
                   onDeleteUser={handleDeleteConfirmation}
+                  onEditUser={handleOpenEditModal} 
                 />
               </div>
             )}
@@ -185,6 +221,14 @@ const UserManagementPage = () => {
             onClose={() => setSelectedUser(null)} 
           />
         </div>
+
+        {/* 9. Render the Modal with all necessary props */}
+        <AdminUserModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSuccess={handleAdminSuccess}
+          userToEdit={userToEdit} 
+        />
       </main>
     </div>
   );

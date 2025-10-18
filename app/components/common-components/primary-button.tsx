@@ -24,7 +24,7 @@ const variants = {
 type PrimaryButtonProps = {
   context: string;
   icon?: LucideIcon;
-  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   type?: "button" | "submit" | "reset";
   className?: string;
   variant?: keyof typeof variants; // 'primary', 'danger', 'secondary', 'info'

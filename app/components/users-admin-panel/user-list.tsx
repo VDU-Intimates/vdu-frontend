@@ -3,15 +3,16 @@
 import React from 'react';
 import { User } from '../../(admin)/users/types';
 import PrimaryButton from '@/app/components/common-components/primary-button';
-import { Trash2, User as UserIcon } from 'lucide-react';
+import { Trash2, User as UserIcon, Edit } from 'lucide-react';
 
 interface UserListProps {
   users: User[];
   onViewUser: (user: User) => void;
   onDeleteUser: (user: User) => void;
+  onEditUser: (user: User) => void;
 }
 
-const UserList = ({ users, onViewUser, onDeleteUser }: UserListProps) => {
+const UserList = ({ users, onViewUser, onDeleteUser, onEditUser }: UserListProps) => {
   if (users.length === 0) {
     return (
       <div className="text-center py-20 text-gray-500">
@@ -59,12 +60,30 @@ const UserList = ({ users, onViewUser, onDeleteUser }: UserListProps) => {
               </span>
               {/* Action Buttons */}
               <div className="flex gap-2">
+                
+                {/* View Button (for all users) */}
                 <PrimaryButton
                   variant="info"
                   context="View"
                   onClick={() => onViewUser(user)}
                   className="!w-full !h-9 !text-xs !max-w-[100px]"
                 />
+                
+                {/* Conditional Edit Button or Placeholder */}
+                {user.role === 'Admin' ? (
+                  <PrimaryButton
+                    variant="secondary"
+                    context="" // No text for the icon-only button
+                    icon={Edit}
+                    onClick={() => onEditUser(user)}
+                    className="!w-9 !h-9 !p-0" // Square button for the icon
+                  />
+                ) : (
+                  // Placeholder div to maintain spacing for non-admin rows
+                  <div className="!w-9 !h-9 !p-0 flex-shrink-0" /> 
+                )}
+                
+                {/* Delete Button (for all users) */}
                 <PrimaryButton
                   variant="danger"
                   context="" // No text for the icon-only button
