@@ -84,7 +84,8 @@ const UserManagementPage = () => {
     if (searchQuery) {
       processedUsers = processedUsers.filter(user =>
         user.name.toLowerCase().includes(searchQuery) ||
-        user.email.toLowerCase().includes(searchQuery)
+        user.email.toLowerCase().includes(searchQuery) ||
+        user.id.toLowerCase().includes(searchQuery)
       );
     }
     
