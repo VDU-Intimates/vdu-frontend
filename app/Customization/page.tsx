@@ -82,6 +82,7 @@ type Design = {
     angle?: number;
   }>;
   productName?: string;
+  productId?: string;
   createdAt: string;
 };
 
@@ -348,7 +349,7 @@ const CustomizationPage = () => {
     setLoadingDesigns(true);
     try {
       // ✅ Fetch only the 5 most recent designs
-      const res = await fetch(`${API_BASE}/api/designs?limit=5`, {
+      const res = await fetch(`${API_BASE}/api/designs?page=1&limit=5`, {
         headers: { Authorization: `Bearer ${getToken()}` },
         cache: 'no-store',
       });
@@ -392,6 +393,7 @@ const CustomizationPage = () => {
         imageUrls,
         texts,
         productName: product?.productName || 'T-Shirt',
+        productId: product?._id ?? product?.productId,
       }),
     });
     if (!res.ok) {
@@ -473,6 +475,15 @@ const CustomizationPage = () => {
       const token = getToken();
       if (!token) { toast.error('Please log in first'); return; }
       if (!product) { toast.error('Product not loaded'); return; }
+
+      // CHANGED: use the design's productId; if absent, fall back to current product (last resort)
+      const effectiveProductId =
+        d.productId || product?.productId || product?._id;
+      if (!effectiveProductId) {
+        toast.error('Design has no linked product');
+        return;
+      }
+
       const size = paraSize || product.sizes?.[0] || 'M';
 
       setBtnBusyEx(true);
@@ -480,7 +491,7 @@ const CustomizationPage = () => {
       const payload = {
         items: [
           {
-            productId: product.productId,
+            productId: effectiveProductId,
             size,
             quantity: 1,
             custom: {
@@ -530,7 +541,7 @@ const CustomizationPage = () => {
     const win = window.open('', '_blank');
     if (win) {
       win.document.write('<title>Design Preview</title>');
-      win.document.write(`<img src="${finalOut}" style="display:block;max-width:100%;height:auto;" />`);
+      win.document.write(`<img src="${finalOut}" style="display:block;max-width:50%;height:auto;" />`);
       win.document.close();
     }
   }
@@ -719,16 +730,21 @@ const CustomizationPage = () => {
                   </div>
 
                   {/* Add to Cart */}
-                  <div className="flex justify-end mt-6 text-sm">
-                    <button
-                      onClick={addCustomizedToCart}
-                      disabled={btnBusy}
-                      className={`w-fit h-[40px] px-3 border-2 font-bold rounded-2xl transition-all duration-300 shadow-md flex items-center justify-center gap-3 max-xl:py-6 max-xl:text-xs lg:text-sm cursor-pointer bg-light-green text-beige border-light-green hover:bg-beige hover:text-light-green hover:shadow-[0_4px_6px_rgba(0,0,0,0.3),0_0_15px_rgba(34,197,94,0.5)] ${btnBusy ? 'bg-emerald-400' : 'bg-emerald-600 '}`}
-                    >
-                      {btnBusy ? 'ADDING…' : `ADD TO CART`}
-                      <ShoppingCart />
-                    </button>
-                  </div>
+                  <button
+                    onClick={addCustomizedToCart}
+                    disabled={btnBusyEx}
+                    className={`w-fit h-[40px] p-5 border-2 font-bold rounded-2xl transition-all 
+                                duration-300 shadow-md flex items-center justify-center gap-3 
+                                max-xl:py-6 max-xl:text-xs lg:text-sm cursor-pointer
+                                bg-light-green text-beige border-light-green
+                                hover:bg-beige hover:text-light-green hover:shadow-[0_4px_6px_rgba(0,0,0,0.3),0_0_15px_rgba(34,197,94,0.5)]
+                                disabled:bg-gray-400 disabled:border-gray-400 disabled:text-white
+                                disabled:cursor-not-allowed disabled:hover:bg-gray-400
+                                disabled:hover:text-white disabled:hover:shadow-none`}
+                  >
+                    {btnBusyEx ? 'ADDING…' : 'ADD TO CART'}
+                    <ShoppingCart />
+                  </button>
                 </div>
               </div>
             </div>
@@ -753,7 +769,7 @@ const CustomizationPage = () => {
                       <div className="flex flex-col gap-3 min-w-[250px]">
                         <div>
                           <p className="font-semibold text-sm sm:text-base">
-                            Product Name : <span className="font-normal">{product?.productName || d.productName || 'T-Shirt'}</span>
+                            Product Name : <span className="font-normal">{d.productName || '—'}</span>
                           </p>
                           <p className="font-semibold text-sm sm:text-base">
                             Created At : <span className="font-normal">{new Date(d.createdAt).toLocaleDateString()}</span>
@@ -782,7 +798,14 @@ const CustomizationPage = () => {
                             key={index}
                             onClick={() => addExistingDesignToCart(d)}
                             disabled={btnBusyEx}
-                            className={`w-fit h-[40px] p-5 border-2 font-bold rounded-2xl transition-all duration-300 shadow-md flex items-center justify-center gap-3 max-xl:py-6 max-xl:text-xs lg:text-sm cursor-pointer bg-light-green text-beige border-light-green hover:bg-beige hover:text-light-green hover:shadow-[0_4px_6px_rgba(0,0,0,0.3),0_0_15px_rgba(34,197,94,0.5)] ${btnBusy ? 'bg-emerald-400' : 'bg-emerald-600 '}`}
+                            className={`w-fit h-[40px] p-5 border-2 font-bold rounded-2xl transition-all 
+                                        duration-300 shadow-md flex items-center justify-center gap-3 
+                                        max-xl:py-6 max-xl:text-xs lg:text-sm cursor-pointer
+                                        bg-light-green text-beige border-light-green
+                                        hover:bg-beige hover:text-light-green hover:shadow-[0_4px_6px_rgba(0,0,0,0.3),0_0_15px_rgba(34,197,94,0.5)]
+                                        disabled:bg-gray-400 disabled:border-gray-400 disabled:text-white
+                                        disabled:cursor-not-allowed disabled:hover:bg-gray-400
+                                        disabled:hover:text-white disabled:hover:shadow-none`}
                           >
                             {btnBusyEx ? 'ADDING…' : 'ADD TO CART'}
                             <ShoppingCart />

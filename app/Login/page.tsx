@@ -440,9 +440,7 @@ const Login: React.FC = () => {
 
                       {otpMessage && <div className="text-sm text-gray-700 mt-3">{otpMessage}</div>}
 
-                      <div className="mt-4 w-full text-xs text-gray-400 text-center">
-                        Note: API endpoints <code>/api/auth/request-otp</code> and <code>/api/auth/verify-otp</code> expected.
-                      </div>
+                      
                     </div>
                   </div>
                 </div>

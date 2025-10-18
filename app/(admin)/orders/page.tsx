@@ -13,6 +13,14 @@ import ReportDownloader from '../../components/reports/report-downloader';
 import FilterDropdown, { FilterType } from "@/app/components/order-components/filter-dropdown";
 import SortDropdown from "@/app/components/order-components/sort-dropdown";
 
+function getErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "object" && err && "message" in err) {
+    return String((err as { message?: unknown }).message);
+  }
+  return "Something went wrong.";
+}
+
 const OrderHeatmap = dynamic(() => import('@/app/components/maps/order-heatmap'), {
   ssr: false,
   loading: () => <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50"><p className="text-white">Loading Map...</p></div>
@@ -53,8 +61,8 @@ const OrdersPage = () => {
       if (!response.ok) throw new Error('Failed to fetch orders.');
       const data: OrderListItem[] = await response.json();
       setAllOrders(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
