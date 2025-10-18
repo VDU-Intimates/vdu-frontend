@@ -1,58 +1,82 @@
 "use client";
 
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import React from "react";
-import ProductCard from "../components/product-card/product-card";
-import NavBar from "../components/nav-bar/nav-bar";
-import Footer from "../components/footer/footer";
+import { FaHeart, FaRegHeart } from "react-icons/fa";
 
-const ProductsPage = () => {
+interface Product {
+  _id: string;
+  productName: string;
+  price: number;
+  photoUrl: string[];
+}
+
+const ProductCard = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [wishlist, setWishlist] = useState<string[]>([]);
+
+  // Load wishlist from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("wishlist");
+    if (saved) setWishlist(JSON.parse(saved));
+  }, []);
+
+  // Fetch products from backend
+  useEffect(() => {
+    fetch("http://localhost:5000/api/products")
+      .then((res) => res.json())
+      .then((data) => setProducts(data))
+      .catch((err) => console.error(err));
+  }, []);
+
+  // Toggle wishlist
+  const toggleWishlist = (id: string) => {
+    let updated: string[];
+    if (wishlist.includes(id)) {
+      updated = wishlist.filter((pid) => pid !== id);
+    } else {
+      updated = [...wishlist, id];
+    }
+    setWishlist(updated);
+    localStorage.setItem("wishlist", JSON.stringify(updated));
+  };
+
   return (
-    <div>
-      <NavBar />
-
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-        {/* Hero */}
-        <section className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-          <div className="grid grid-cols-1 lg:grid-cols-2">
-            <div className="p-8 sm:p-10 lg:p-12 flex flex-col gap-4">
-              <span className="text-xs font-semibold tracking-wide text-[#2f432a]">
-                VDU INTIMATES
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">
-                Grab Up to 50% Off On
-                <br />
-                Selected intimates &amp; T-shirts
-              </h2>
-              <div>
-                <button className="mt-2 inline-flex items-center rounded-full bg-[#2f432a] px-4 py-2 text-sm font-semibold text-[#eadfcd] hover:opacity-90">
-                  Buy Now
-                </button>
-              </div>
-            </div>
-            <div className="relative min-h-[220px] lg:min-h-[280px]">
-              <Image
-                src="/assets/images/hero_image_2.jpg"
-                alt="Intimates banner"
-                fill
-                className="object-cover"
-                sizes="(min-width:1024px) 50vw, 100vw"
-                priority
-              />
-            </div>
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      {products.map((product) => (
+        <div
+          key={product._id}
+          className="relative border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition"
+        >
+          <div className="absolute top-2 right-2 z-10">
+            <button
+              onClick={() => toggleWishlist(product._id)}
+              className="text-[#2f432a] hover:opacity-80"
+            >
+              {wishlist.includes(product._id) ? (
+                <FaHeart className="text-red-500 text-xl" />
+              ) : (
+                <FaRegHeart className="text-xl" />
+              )}
+            </button>
           </div>
-        </section>
 
-        {/* Product grid (self-contained fetch inside ProductCard) */}
-        <section className="mt-6">
-          <ProductCard />
-        </section>
-      </main>
+          <Image
+            src={product.photoUrl[0]}
+            alt={product.productName}
+            width={300}
+            height={300}
+            className="object-cover w-full h-60"
+          />
 
-      <Footer />
+          <div className="p-3 flex flex-col items-start">
+            <h3 className="text-sm font-semibold">{product.productName}</h3>
+            <p className="text-gray-600 text-sm">LKR {product.price}</p>
+          </div>
+        </div>
+      ))}
     </div>
   );
 };
 
-
-export default ProductsPage;
+export default ProductCard;

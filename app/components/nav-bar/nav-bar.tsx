@@ -7,6 +7,7 @@ import { Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import SearchBar from "../common-components/search-bar";
 
+
 // API base for your backend
 const API_BASE = "http://localhost:5000";
 
