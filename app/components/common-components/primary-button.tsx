@@ -53,7 +53,7 @@ const PrimaryButton = ({
         onClick={onClick} 
         type={type}
         disabled={disabled}
-        className={`p-3 flex items-center justify-center
+        className={`p-3 flex z-1000 items-center justify-center
                     max-md:text-sm w-full h-full rounded-lg text-lg font-bold gap-2 
                     transition-all duration-500 cursor-pointer border-2
                     disabled:opacity-50 disabled:cursor-not-allowed

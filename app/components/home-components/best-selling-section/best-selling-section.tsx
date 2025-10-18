@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { CreditCard, ShoppingCart, Star, ArrowRight } from "lucide-react";
 import Buttons from "../../common-components/button";
+import Link from "next/link";
 
 function getErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -86,11 +87,13 @@ function BestSellingCard({ p }: { p: BestProduct }) {
             combo="beigeGreen"
             className="w-full sm:w-auto px-4 py-2 text-sm font-medium"
           />
-          <Buttons
-            context="Buy Now"
-            icon={CreditCard}
-            className="w-full sm:w-auto px-4 py-2 text-sm font-medium"
-          />
+          <Link href={`../ProductDetail?id=${p.productId}`}>
+                  <Buttons
+                    context="Buy Now"
+                    icon={CreditCard}
+                    className="w-full sm:w-auto px-4 py-2 text-sm font-medium"
+                  />
+                </Link>
         </div>
       </div>
     </div>
@@ -169,7 +172,9 @@ const BestSelling = () => {
               </div>
 
               <div className="absolute bottom-5 left-5">
+                <Link href="/AllProducts">
                 <Buttons context="Shop More" icon={ArrowRight} />
+                </Link>
               </div>
             </div>
           </aside>

@@ -232,7 +232,7 @@ async function handleRate(v: number) {
                 </BreadcrumbSeparator>
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild>
-                    <Link href="/AllProduct">All Products</Link>
+                    <Link href="/AllProducts">All Products</Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator>

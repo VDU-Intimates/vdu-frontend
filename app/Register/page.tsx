@@ -7,6 +7,7 @@ import Image from "next/image";
 import NavBar from "../components/nav-bar/nav-bar";
 import Footer from "../components/footer/footer";
 import toast from "react-hot-toast";
+import PrimaryButton from "../components/common-components/primary-button";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
@@ -299,23 +300,14 @@ const Register = () => {
                 )}
               </div>
 
-              <button
-                type="submit"
-                disabled={!canSubmit || busy}
-                className={`w-full rounded-xl py-2.5 font-semibold transition ${
-                  canSubmit && !busy
-                    ? "bg-[#2f432a] text-[#eadfcd] hover:opacity-90"
-                    : "bg-neutral-200 text-neutral-500 cursor-not-allowed"
-                }`}
-              >
-                {busy ? "Creating..." : "Create account"}
-              </button>
+
+              <PrimaryButton type="submit" className="w-full" disabled = {!canSubmit || busy} context={busy ? "Creating..." : "Create account"}/>
 
               <p className="text-center font-semibold text-sm">
                 Or Sign up with
               </p>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3">
               <div
                 id="google-register-btn"
                 className="rounded-xl border border-neutral-300 bg-white py-2 font-medium flex items-center justify-center gap-2 cursor-pointer"
@@ -330,21 +322,6 @@ const Register = () => {
                 />
                 <span>Google</span>
               </div>
-
-                <button
-                  type="button"
-                  disabled
-                  className="rounded-xl border border-neutral-300 bg-white py-2 font-medium flex items-center justify-center gap-2 cursor-not-allowed"
-                  title="Facebook not configured"
-                >
-                  <Image
-                    src="/assets/images/facebook-icon.png"
-                    alt="Facebook Icon"
-                    width={24}
-                    height={24}
-                  />
-                  <span>Facebook</span>
-                </button>
               </div>
 
               {msg && (

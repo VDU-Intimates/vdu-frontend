@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
-  Download,
+  // Download,
   PackagePlus,
   PencilLine,
   Trash2,
@@ -127,31 +127,31 @@ export default function InventoryPage() {
   const [err, setErr] = useState<string | null>(null);
 
   // Download CSV report
-  async function downloadCsv() {
-    try {
-      const res = await fetch(`${API_BASE}/api/admin/products/report`);
-      if (!res.ok) throw new Error(`Download failed (${res.status})`);
-      const blob = await res.blob();
-      const urlObj = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = urlObj;
+  // async function downloadCsv() {
+  //   try {
+  //     const res = await fetch(`${API_BASE}/api/admin/products/report`);
+  //     if (!res.ok) throw new Error(`Download failed (${res.status})`);
+  //     const blob = await res.blob();
+  //     const urlObj = URL.createObjectURL(blob);
+  //     const a = document.createElement("a");
+  //     a.href = urlObj;
 
-      const d = new Date();
-      const day = String(d.getDate()).padStart(2, "0");
-      const month = String(d.getMonth() + 1).padStart(2, "0");
-      const year = d.getFullYear();
-      const hours = String(d.getHours()).padStart(2, "0");
-      const minutes = String(d.getMinutes()).padStart(2, "0");
-      a.download = `inventory-report-${day}-${month}-${year}-${hours}-${minutes}.csv`;
+  //     const d = new Date();
+  //     const day = String(d.getDate()).padStart(2, "0");
+  //     const month = String(d.getMonth() + 1).padStart(2, "0");
+  //     const year = d.getFullYear();
+  //     const hours = String(d.getHours()).padStart(2, "0");
+  //     const minutes = String(d.getMinutes()).padStart(2, "0");
+  //     a.download = `inventory-report-${day}-${month}-${year}-${hours}-${minutes}.csv`;
 
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(urlObj);
-    } catch (e) {
-      alert(`Failed to download report: ${getErrorMessage(e)}`);
-    }
-  }
+  //     document.body.appendChild(a);
+  //     a.click();
+  //     a.remove();
+  //     URL.revokeObjectURL(urlObj);
+  //   } catch (e) {
+  //     alert(`Failed to download report: ${getErrorMessage(e)}`);
+  //   }
+  // }
 
   // Load products
   useEffect(() => {
@@ -176,13 +176,12 @@ export default function InventoryPage() {
     <div className="flex min-h-screen font-poppins bg-[#f4efe4]">
       <AdminNavBar />
       <main className="lg:ml-64 flex-1 p-8">
-        <div className="flex min-w-full mt-15 mb-5">
-          {/* <Buttons context="Download Report" icon={Download} onClick={downloadCsv} /> */}
+        <div className="mt-15 mb-5">
           <ReportDownloader 
-            title="Download Monthly Inventory Report"
-            apiEndpoint="/admin/products/report"
-            fileNamePrefix="Inventory-Report"
-          />
+              title="Download Monthly Inventory Report"
+              apiEndpoint="/admin/products/report"
+              fileNamePrefix="Inventory-Report"
+            />
         </div>
 
         <div className="flex items-center justify-center mb-6">
@@ -456,21 +455,21 @@ function AddNewProduct({ onCreated }: { onCreated: (p: UIProduct) => Promise<voi
 
         {/* Multiple image upload (max 5) */}
         <div className="mb-6">
-  <label className="block text-sm font-medium mb-2">Product Images (max 5)</label>
-  <div className="flex items-center gap-3">
-    <label className="px-3 py-2 rounded-lg border bg-white inline-flex items-center gap-2 cursor-pointer">
-      <PencilLine className="w-4 h-4" />
-      <span>ADD IMAGES</span>
-      <input
-        key={fileKey}
-        type="file"
-        accept="image/*"
-        multiple
-        className="hidden"
-        onChange={onPickImages}
-      />
-    </label>
-  </div>
+          <label className="block text-sm font-medium mb-2">Product Images (max 5)</label>
+        <div className="flex items-center gap-3">
+          <label className="px-3 py-2 rounded-lg border bg-white inline-flex items-center gap-2 cursor-pointer">
+            <PencilLine className="w-4 h-4" />
+            <span>ADD IMAGES</span>
+            <input
+              key={fileKey}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={onPickImages}
+            />
+          </label>
+        </div>
 
   {form.images.length > 0 && (
     <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
