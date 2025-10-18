@@ -1,8 +1,9 @@
-//sidebar
-
 import React from 'react';
 import { User } from '../../(admin)/users/types';
 import { Mail, Phone, MapPin, Shield } from 'lucide-react';
+import PrimaryButton from '@/app/components/common-components/primary-button';
+import UserOrderHistory from './user-order-history';
+import DetailItem from '../common-components/detail-item'; // <-- Import DetailItem
 
 interface UserDetailsSidebarProps {
   user: User | null;
@@ -21,6 +22,7 @@ const UserDetailsSidebar = ({ user, onClose }: UserDetailsSidebarProps) => {
           <h2 className="text-xl font-bold text-gray-800">User Details</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
         </div>
+        
         <div className="text-center mb-6">
           <img
             src={user.avatar}
@@ -31,26 +33,38 @@ const UserDetailsSidebar = ({ user, onClose }: UserDetailsSidebarProps) => {
           <h3 className="text-lg font-semibold text-gray-800 mb-1">{user.name}</h3>
           <p className="text-sm text-gray-500 font-mono bg-gray-100 px-2 py-1 rounded inline-block">ID: #{user.id}</p>
         </div>
+        
         <div className="space-y-4">
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2"><Mail size={16} className="text-gray-600" /><span className="font-semibold text-gray-700">Email Address</span></div>
+
+          <DetailItem label="Email Address" icon={Mail}>
             <p className="text-gray-800 break-all">{user.email}</p>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2"><Phone size={16} className="text-gray-600" /><span className="font-semibold text-gray-700">Contact Number</span></div>
+          </DetailItem>
+
+          <DetailItem label="Contact Number" icon={Phone}>
             <p className="text-gray-800">{user.contact}</p>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2"><MapPin size={16} className="text-gray-600" /><span className="font-semibold text-gray-700">Address</span></div>
+          </DetailItem>
+
+          <DetailItem label="Address" icon={MapPin}>
             <p className="text-gray-800">{user.address}</p>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2"><Shield size={16} className="text-gray-600" /><span className="font-semibold text-gray-700">Role</span></div>
-            <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${user.role === 'Admin' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}><Shield size={14} className="mr-1" />{user.role}</span>
-          </div>
+          </DetailItem>
+
+          <DetailItem label="Role" icon={Shield}>
+            <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${user.role === 'Admin' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
+              <Shield size={14} className="mr-1" />{user.role}
+            </span>
+          </DetailItem>
+          
         </div>
+
+        <UserOrderHistory userId={user.id} />
+
         <div className="mt-6 pt-6 border-t border-gray-200">
-          <button onClick={onClose} className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Close Details</button>
+          <PrimaryButton
+            variant="secondary"
+            context="Close Details"
+            onClick={onClose}
+            className="!w-full !h-12 !text-base" // Override size to fit
+          />
         </div>
       </div>
     </div>
