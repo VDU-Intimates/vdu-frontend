@@ -3,6 +3,7 @@ import Buttons from '../../common-components/button';
 import Link from 'next/link';
 import { CreditCard, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
+import Stars from '../../common-components/stars';
 
 
 const API_BASE ="http://localhost:5000";
@@ -13,9 +14,12 @@ type ApiProduct = {
   productId: string;
   productName: string;
   description: string;
+  sizes?: string[];
   price: number;
-  photoUrl: string;
+  photoUrl: string[];
   category: string;
+  avgRating?: number;      // NEW
+  ratingCount?: number;    // NEW
 };
 
 const NewArrivals = () => {
@@ -33,10 +37,7 @@ const NewArrivals = () => {
             setLoading(true);
     
             // Grab the latest 6 products; tweak sort/limit to your needs
-            const res = await fetch(
-              `${API_BASE}/api/products?sort=-createdAt&limit=6`,
-              { cache: "no-store" }
-            );
+            const res = await fetch(`${API_BASE}/api/products?sort=-createdAt&limit=6&includeRatings=1`, { cache: "no-store" });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const json: { data: ApiProduct[] } = await res.json();
             if (!cancelled) setItems(json.data || []);
@@ -79,7 +80,7 @@ const NewArrivals = () => {
             >
               <div className="relative aspect-[4/5] w-full">
                 <Image
-                  src={p.photoUrl || "/assets/images/placeholder-tshirt.jpg"}
+                  src={p.photoUrl[0] || "/assets/images/placeholder-tshirt.jpg"}
                   alt={p.productName}
                   fill
                   className="object-cover"
@@ -90,6 +91,10 @@ const NewArrivals = () => {
               <div className="p-4 flex flex-col gap-2">
                 <h3 className="font-semibold line-clamp-2">{p.productName}</h3>
                 <p className="text-gray-500 text-sm">{p.category}</p>
+                <p className="text-gray-500 text-sm">{p.sizes?.[0]}</p>
+                <div className="flex items-center gap-2">
+                  <Stars value={p.avgRating ?? 0} count={p.ratingCount ?? 0} />
+                </div>
                 <p className="font-bold text-lg">Rs.{p.price}</p>
 
                 <div className="flex gap-2 mt-3">
@@ -99,6 +104,7 @@ const NewArrivals = () => {
                     productId={p.productId}
                     // if you need a size here, pass default from p.sizes?.[0]
                     className="w-full"
+                    size={p.sizes?.[0]}
                   />
                   <Link href={`/ProductDetail?id=${encodeURIComponent(p.productId)}`}>
                     <Buttons

@@ -1,20 +1,22 @@
 "use client";
-import { CreditCard, ShoppingCart, Star } from "lucide-react";
+import { CreditCard, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import Buttons from "../common-components/button";
 import Link from "next/link";
+import Stars from '../common-components/stars';
 
-const API_BASE = "http://localhost:5000"; // adjust if needed
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 
 export type CardProduct = {
   productId: string;
   productName: string;
   price: number;
-  photoUrl: string;
+  photoUrl: string[]; // ← now supports multiple images
   category: string;
   sizes: string[];
-  rating?: number;
+  avgRating?: number;     // NEW
+  ratingCount?: number;   // NEW
 };
 
 const ProductCard = () => {
@@ -24,10 +26,10 @@ const ProductCard = () => {
   useEffect(() => {
     const loadProducts = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/products`);
+        const res = await fetch(`${API_BASE}/api/products?includeRatings=1`);
         if (!res.ok) throw new Error("Failed to fetch products");
         const data = await res.json();
-        setProducts(data.data); // assumes your backend returns an array
+        setProducts(data.data); // assumes your backend returns array in `data`
       } catch (err) {
         console.error("Error loading products:", err);
       } finally {
@@ -37,19 +39,7 @@ const ProductCard = () => {
     loadProducts();
   }, []);
 
-  function Stars({ value = 0 }) {
-    const full = Math.round(value);
-    return (
-      <div className="flex items-center gap-0.5" aria-label={`${full} star rating`}>
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Star
-            key={i}
-            className={`w-4 h-4 ${i < full ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
-          />
-        ))}
-      </div>
-    );
-  }
+  
 
   if (loading) {
     return <p className="text-center text-gray-500">Loading products…</p>;
@@ -59,7 +49,13 @@ const ProductCard = () => {
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {products.map((p) => {
         const priceText = Number.isFinite(p.price) ? `Rs.${p.price}` : "—";
-        const defaultSize = p.sizes?.[0] || "M"; // pick first available size
+        const defaultSize = p.sizes?.[0] || "M";
+
+        // ✅ Choose main image (first in array) or fallback placeholder
+        const mainImage =
+          Array.isArray(p.photoUrl) && p.photoUrl.length > 0
+            ? p.photoUrl[0]
+            : "/assets/images/placeholder-tshirt.jpg";
 
         return (
           <div
@@ -68,7 +64,7 @@ const ProductCard = () => {
           >
             <div className="relative aspect-[4/3] w-full overflow-hidden rounded-t-2xl">
               <Image
-                src={p.photoUrl || "/assets/images/placeholder-tshirt.jpg"}
+                src={mainImage}
                 alt={p.productName}
                 fill
                 className="object-cover"
@@ -82,10 +78,11 @@ const ProductCard = () => {
                 <span className="font-semibold text-gray-900 whitespace-nowrap">{priceText}</span>
               </div>
 
-              <p className="mt-1 text-sm text-gray-700"> {p.category}</p>
-              <p className="mt-1 text-sm text-gray-700"> {defaultSize}</p>
+              <p className="mt-1 text-sm text-gray-700">{p.category}</p>
+              <p className="mt-1 text-sm text-gray-700">{defaultSize}</p>
+
               <div className="mt-2">
-                <Stars value={p.rating ?? 0} />
+                <Stars value={p.avgRating ?? 0} count={p.ratingCount ?? 0} />
               </div>
 
               <div className="mt-3 flex items-center justify-between gap-3">
