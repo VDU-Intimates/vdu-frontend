@@ -11,7 +11,7 @@ interface OrderSummaryProps {
 
 const OrderSummary: React.FC<OrderSummaryProps> = ({ 
     subtotal, 
-    discountPercent = 0, // Using default value here for safety, though CartPage passes a calculated object
+    discountPercent = 0, // Using default value here for safety
     discountAmount = 0, 
     deliveryFee = 0, 
     total,

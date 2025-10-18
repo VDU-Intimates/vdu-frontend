@@ -24,7 +24,7 @@ export interface CartItemType {
   custom?: {
     isCustomized?: boolean;
     designId?: string;
-    previewUrl?: string;       // <— use this image if present
+    previewUrl?: string;
     imageUrls?: string[];
     texts?: CustomText[];
     color?: string;
@@ -45,9 +45,6 @@ const CartItem: React.FC<Props> = ({ item, onQuantityChange, onRemove, currency 
     (isCustomized && item.custom?.previewUrl) ||
     item.photoUrl ||
     '/assets/images/placeholder-tshirt.jpg';
-
-  // const imagesCount = Array.isArray(item.custom?.imageUrls) ? item.custom!.imageUrls!.length : 0;
-  // const textsCount = Array.isArray(item.custom?.texts) ? item.custom!.texts!.length : 0;
 
   return (
     <div className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200">
@@ -71,29 +68,6 @@ const CartItem: React.FC<Props> = ({ item, onQuantityChange, onRemove, currency 
       <div className="flex-1 min-w-0">
         <h3 className="font-medium text-gray-900 truncate">{item.productName}</h3>
         <p className="text-sm text-gray-500">Size: {item.size}</p>
-
-        {/* {isCustomized && (
-          <div className="mt-1 flex items-center gap-3 text-xs text-gray-600">
-            <span className="inline-flex items-center gap-1">
-              <ImageIcon className="w-3.5 h-3.5" />
-              {imagesCount} image{imagesCount === 1 ? '' : 's'}
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Type className="w-3.5 h-3.5" />
-              {textsCount} text{textsCount === 1 ? '' : 's'}
-            </span>
-            {item.custom?.color && (
-              <span className="inline-flex items-center gap-2">
-                Color:
-                <span
-                  aria-label="custom color"
-                  className="inline-block h-3.5 w-3.5 rounded-full border"
-                  style={{ backgroundColor: item.custom.color }}
-                />
-              </span>
-            )}
-          </div>
-        )} */}
       </div>
 
       {/* Quantity */}

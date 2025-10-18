@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import PrimaryButton from "../common-components/primary-button";
 
 export type DeliveryInfo = {
   fullName?: string;
@@ -190,25 +191,26 @@ const DeliveringTo: React.FC<Props> = ({
 
         <p className="text-xs text-gray-500 mt-4">{termsText}</p>
 
-        <div className="flex gap-4 mt-6">
-          <button
+        <div className="flex flex-col sm:flex-row gap-4 mt-6">
+          <PrimaryButton
+            variant="danger" // Use the danger style for clearing
+            context="Clear ✕"
             onClick={() => {
               setTouched({});
               onClear();
             }}
-            className="px-6 py-3 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
             disabled={isLoading}
-          >
-            Clear ✕
-          </button>
-
-          <button
+            // Override default size to fit the layout
+            className="!w-full sm:!w-auto !h-12 !text-sm flex-shrink-0" 
+          />
+          <PrimaryButton
+            variant="primary" // Default primary style
+            context={isLoading ? "Processing..." : payBtnLabel}
             onClick={tryConfirm}
             disabled={isLoading || !isValid}
-            className="flex-1 px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? "Processing..." : payBtnLabel}
-          </button>
+            // Override default size and make it grow
+            className="!w-full !h-12 !text-sm flex-grow" 
+          />
         </div>
       </div>
     </div>
