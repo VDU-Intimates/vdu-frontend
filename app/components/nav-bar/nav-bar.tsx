@@ -53,12 +53,12 @@ const NavBar = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   // Account modal state (kept)
-  const [accountOpen, setAccountOpen] = useState(false);
-  const [fName, setFName] = useState("");
-  const [lName, setLName] = useState("");
-  const [contact, setContact] = useState("");
-  const [address, setAddress] = useState("");
-  const [saving, setSaving] = useState(false);
+  // const [accountOpen, setAccountOpen] = useState(false);
+  // const [fName, setFName] = useState("");
+  // const [lName, setLName] = useState("");
+  // const [contact, setContact] = useState("");
+  // const [address, setAddress] = useState("");
+  // const [saving, setSaving] = useState(false);
 
   // Reset bottom scroller when opened
   useEffect(() => {
@@ -114,54 +114,11 @@ const NavBar = () => {
     currentUser?.fName || (currentUser?.email ? currentUser.email.split("@")[0] : undefined);
 
 
-
-  const openAccountManager = () => {
-    if (!currentUser) return;
-    setFName(currentUser.fName || "");
-    setLName(currentUser.lName || "");
-    setContact(currentUser.contact || "");
-    setAddress(currentUser.address || "");
-    setAccountOpen(true);
-    setUserMenuOpen(false);
-  };
-
-  const handleAccountSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const token = getToken();
-    if (!currentUser || !token) return;
-
-    setSaving(true);
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/me`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          fName: fName.trim(),
-          lName: lName.trim(),
-          contact: contact.trim(),
-          address: address.trim(),
-        }),
-      });
-
-      if (!res.ok) {
-        setSaving(false);
-        return;
-      }
-
-      const data: { user: ApiUser } = await res.json();
-      setCurrentUser(data.user);
-      setAccountOpen(false);
-    } finally {
-      setSaving(false);
-    }
-  };
-
+  //Sign Out
   const handleSignOut = () => {
     try {
       localStorage.removeItem("access_token");
+      window.location.assign("/")
     } catch {}
     setCurrentUser(null);
     setUserMenuOpen(false);
@@ -204,12 +161,12 @@ const NavBar = () => {
             >
               <X size={32} />
             </button>
-
             <div className="flex relative flex-shrink-1 w-fit h-fit gap-10 items-center
                        max-md:flex-col justify-center max-xl:gap-5">
               {[
+                { Label: "All Products", href: "/AllProducts" },
                 { Label: "Bulk Order", href: "/BulkOrder" },
-                { Label: "Contact Us", href: "/ContactUs" },
+                { Label: "Contact Us", href: "/contact" },
                 { Label: "About Us", href: "/AboutUs" },
               ].map((item) => (
                 <p
@@ -224,22 +181,36 @@ const NavBar = () => {
 
             {/* Cart */}
             <div className="flex relative flex-shrink-0 w-fit h-fit cursor-pointer gap-5">
-              <p
-                className={` text-dark-green font-bold text-sm sm:text-sm md:text-xs lg:text-sm xl:text-base 
-                  ${openTop ? "flex" : "hidden"}`}
-              >
-                Cart page
-              </p>
-              <Image
-                src="/assets/icons/Shopping_cart.svg"
-                alt="Cart-Icon"
-                width={32}
-                height={25}
-                className="max-md:w-6"
-              />
-              <span className="absolute -top-3 right-3.5 w-5 h-5 flex items-center justify-center rounded-full bg-light-green text-white text-sm font-bold max-md:text-xs max-md:w-4 max-md:h-4">
-                0
-              </span>
+              <Link href="/cart" className="flex items-center gap-2 w-fit cursor-pointer">
+                {openTop && (
+                  <span className="text-dark-green font-bold text-sm md:text-xs lg:text-sm xl:text-base">
+                    Cart page
+                  </span>
+                )}
+
+                {/* Icon wrapper becomes the positioning context */}
+                <span className="relative inline-block">
+                  <Image
+                    src="/assets/icons/Shopping_cart.svg"
+                    alt="Cart"
+                    width={32}
+                    height={25}
+                    className="max-md:w-6"
+                    priority
+                  />
+                  <span
+                    className="
+                      absolute -top-1 -right-1
+                      flex h-5 w-5 items-center justify-center rounded-full
+                      bg-light-green text-white text-xs font-bold
+                      max-md:h-4 max-md:w-4 max-md:text-[10px]
+                    "
+                    aria-label="Items in cart"
+                  >
+                    0
+                  </span>
+                </span>
+              </Link>
             </div>
 
             {/* Auth section */}
@@ -260,23 +231,23 @@ const NavBar = () => {
               {userMenuOpen && (
                 <div className="absolute right-0 mt-2 w-56 rounded-xl border z-[1000] border-black/5 bg-white shadow-lg p-1 text-sm">
                   <Link
-                    href="/orders"
+                    href="/OrderHistory"
                     className="block rounded-lg px-3 py-2 hover:bg-neutral-50"
                   >
                     Order history
                   </Link>
                   <Link
-                    href="/track"
+                    href="/TrackOrder"
                     className="block rounded-lg px-3 py-2 hover:bg-neutral-50"
                   >
                     Track orders
                   </Link>
-                  <button
-                    onClick={openAccountManager}
+                  <Link
+                    href="/Profile"
                     className="w-full text-left rounded-lg px-3 py-2 hover:bg-neutral-50"
                   >
                     Account management
-                  </button>
+                  </Link>
                   <div className="my-1 border-t border-neutral-200" />
                   <button
                     onClick={() => {
@@ -541,93 +512,6 @@ const NavBar = () => {
           </div>
         </div>
       </div>
-
-      {/* Account Manager Modal */}
-      {accountOpen && currentUser && (
-        <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm grid place-items-center p-4">
-          <form
-            onSubmit={handleAccountSave}
-            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
-          >
-            <h3 className="text-lg font-bold text-[#2f432a] mb-4">
-              Account Management
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700">
-                  First name
-                </label>
-                <input
-                  value={fName}
-                  onChange={(e) => setFName(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-neutral-300 bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-[#F3C86A] focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-700">
-                  Last name
-                </label>
-                <input
-                  value={lName}
-                  onChange={(e) => setLName(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-neutral-300 bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-[#F3C86A] focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700">
-                  Contact
-                </label>
-                <input
-                  value={contact}
-                  onChange={(e) => setContact(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-neutral-300 bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-[#F3C86A] focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-700">
-                  Address
-                </label>
-                <input
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-neutral-300 bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-[#F3C86A] focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setAccountOpen(false)}
-                className="rounded-xl border border-neutral-300 bg-white py-2 font-medium hover:bg-neutral-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={saving}
-                className="rounded-xl bg-[#2f432a] text-[#eadfcd] py-2 font-semibold hover:opacity-90 disabled:opacity-60"
-              >
-                {saving ? "Saving..." : "Save changes"}
-              </button>
-            </div>
-
-            <div className="mt-4 border-t border-neutral-200 pt-4">
-              <button
-                type="button"
-                onClick={() => setAccountOpen(false)}
-                className="w-full rounded-xl border border-red-300 text-red-600 py-2 font-semibold hover:bg-red-50"
-              >
-                Delete account
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
     </nav>
   );
 };

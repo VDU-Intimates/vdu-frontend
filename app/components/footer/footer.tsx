@@ -1,48 +1,55 @@
-import React from 'react';
-import { FaFacebook, FaInstagram, FaYoutube } from 'react-icons/fa';
+import React from "react";
+import Link from "next/link";
+import { FaFacebook, FaInstagram, FaYoutube } from "react-icons/fa";
+
+type TextDetail = { name: string; link: string };
+type IconDetail = { icon: React.ReactNode; link: string; label: string };
+
+type Section =
+  | { title: string; details: TextDetail[] }
+  | { title: string; details: IconDetail[] };
 
 const Footer = () => {
-  const footerHeads = [
+  const footerHeads: Section[] = [
     {
       title: "Company & Policies",
-      details: ["About Us", "Contact Us", "Privacy Policy", "Terms & Services"],
+      details: [
+        { name: "About Us", link: "/AboutUs" },
+        { name: "Contact Us", link: "/contact" },
+        { name: "Privacy Policy", link: "/privacy" },
+        { name: "Terms & Services", link: "/terms" },
+      ],
     },
     {
       title: "Support",
       details: [
-        "General Hotline: +94 11 3246 758",
-        "Order Updates",
-        "Email: vdu.intimates@email.com",
-        "Order Email",
+        { name: "General Hotline: +94 11 3246 758", link: "/support" },
+        { name: "Order Updates", link: "/support/orders" },
+        {
+          name: "Email: vdu.intimates@email.com",
+          link: "mailto:vdu.intimates@email.com",
+        },
+        { name: "Order Email", link: "/support/order-email" },
       ],
     },
     {
       title: "Follow Us",
       details: [
-        <a
-          key="facebook"
-          href="#"
-          aria-label="Facebook"
-          className="hover:text-blue-500 transition-colors duration-300"
-        >
-          <FaFacebook />
-        </a>,
-        <a
-          key="instagram"
-          href="#"
-          aria-label="Instagram"
-          className="hover:text-pink-500 transition-colors duration-300"
-        >
-          <FaInstagram />
-        </a>,
-        <a
-          key="youtube"
-          href="#"
-          aria-label="YouTube"
-          className="hover:text-red-500 transition-colors duration-300"
-        >
-          <FaYoutube />
-        </a>,
+        {
+          icon: <FaFacebook />,
+          link: "https://facebook.com",
+          label: "Facebook",
+        },
+        {
+          icon: <FaInstagram />,
+          link: "https://instagram.com",
+          label: "Instagram",
+        },
+        {
+          icon: <FaYoutube />,
+          link: "https://youtube.com",
+          label: "YouTube",
+        },
       ],
     },
   ];
@@ -60,25 +67,46 @@ const Footer = () => {
                 {section.title}
               </h3>
 
-              {/* Strings → vertical list */}
-              {typeof section.details[0] === "string" ? (
+              {"name" in section.details[0] ? (
+                // Text Links
                 <ul className="space-y-2">
-                  {section.details.map((detail, detailIndex) => (
+                  {(section.details as TextDetail[]).map((detail, detailIndex) => (
                     <li key={detailIndex}>
-                      <a
-                        href="#"
-                        className="hover:text-white transition-colors duration-300"
-                      >
-                        {detail}
-                      </a>
+                      {detail.link.startsWith("http") ||
+                      detail.link.startsWith("mailto:") ? (
+                        <a
+                          href={detail.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-white transition-colors duration-300"
+                        >
+                          {detail.name}
+                        </a>
+                      ) : (
+                        <Link
+                          href={detail.link}
+                          className="hover:text-white transition-colors duration-300"
+                        >
+                          {detail.name}
+                        </Link>
+                      )}
                     </li>
                   ))}
                 </ul>
               ) : (
-                /* Icons → horizontal row */
+                // Social Icons
                 <div className="flex space-x-4 text-white text-2xl">
-                  {section.details.map((detail, detailIndex) => (
-                    <div key={detailIndex}>{detail}</div>
+                  {(section.details as IconDetail[]).map((detail, detailIndex) => (
+                    <a
+                      key={detailIndex}
+                      href={detail.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={detail.label}
+                      className="hover:text-white transition-colors duration-300"
+                    >
+                      {detail.icon}
+                    </a>
                   ))}
                 </div>
               )}

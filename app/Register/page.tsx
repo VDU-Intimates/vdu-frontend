@@ -76,7 +76,7 @@ const Register = () => {
       }
 
       toast.success("Account created successfully.");
-      window.location.assign("/Login"); 
+      window.location.assign("/"); 
     } catch (err: unknown) {
       toast.error(getErrorMessage(err));
     } finally {
@@ -99,6 +99,7 @@ const Register = () => {
               Create your account
             </p>
 
+                  
             <form className="mt-8 space-y-4" onSubmit={handleRegister}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -218,7 +219,33 @@ const Register = () => {
                 }`}
               >
                 {busy ? "Creating..." : "Create account"}
-              </button>
+                </button>
+                  <p className="text-center font-semibold text-sm">Or Sign up with</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      disabled
+                      className="rounded-xl border border-neutral-300 bg-white py-2 font-medium flex items-center justify-center gap-2 cursor-not-allowed"
+                      title="Google not configured (JWT auth in use)"
+                    >
+                      <span className="inline-block h-5 w-5 rounded-full">
+                        <Image src="/assets/images/google-icon.png" alt="Google Icon" width={24} height={24}/>
+                      </span>
+                      <span>Google</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled
+                      className="rounded-xl border border-neutral-300 bg-white py-2 font-medium flex items-center justify-center gap-2 cursor-not-allowed"
+                      title="Facebook not configured"
+                    >
+                      <span className="inline-block h-5 w-5 rounded-full bg-neutral-300" >
+                        <Image src="/assets/images/facebook-icon.png" alt="Google Icon" width={24} height={24}/>
+                      </span>
+                      <span>Facebook</span>
+                    </button>
+                  </div>
 
               {msg && <p className="text-center text-sm mt-2 text-neutral-700">{msg}</p>}
 

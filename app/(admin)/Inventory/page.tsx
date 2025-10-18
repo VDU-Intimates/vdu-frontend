@@ -1,15 +1,17 @@
+
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
 import {
   Box,
   ClipboardList,
+  Download,
   PackagePlus,
   PencilLine,
   Trash2,
-  Users,
 } from "lucide-react";
+import AdminNavBar from "@/app/components/nav-bar/admin-nav-bar";
+import Buttons from "@/app/components/common-components/button";
 
 /* =========================
    Config & Helpers
@@ -43,12 +45,12 @@ type UIProduct = {
   productId?: string; // productId from backend
   name: string; // productName
   description: string;
-  category: "T-Shirt" | "MEN" | "WOMEN"; // UI categories
+  category: "T-Shirt" | "Intimate"; // UI categories
   price: number;
-  stock: number; // UI-only
   image: string; // photoUrl (can be base64 or URL)
   colors?: string[];
   sizes?: string[];
+  stock: number; // UI-only
 };
 
 // Backend product (subset, matches your model)
@@ -62,6 +64,7 @@ type ApiProduct = {
   colors: string[];
   sizes: string[];
   category: "T-Shirt" | "Intimate";
+  stock: number;
 };
 
 /* =========================
@@ -74,12 +77,12 @@ function apiToUI(p: ApiProduct): UIProduct {
     productId: p.productId,
     name: p.productName,
     description: p.description,
-    category: p.category === "Intimate" ? "MEN" : "T-Shirt",
+    category: p.category === "Intimate" ? "Intimate" : "T-Shirt",
     price: p.price,
-    stock: 0,
     image: p.photoUrl,
     colors: p.colors ?? [],
     sizes: p.sizes ?? [],
+    stock: p.stock,
   };
 }
 
@@ -96,6 +99,7 @@ function uiToApi(p: UIProduct): Partial<ApiProduct> {
     colors: colors.length ? colors : ["default"], // keep backend validator happy
     sizes: sizes.length ? sizes : ["M"],
     category: p.category === "T-Shirt" ? "T-Shirt" : "Intimate",
+    stock:p.stock
   };
 }
 
@@ -108,6 +112,37 @@ type View = "add" | "update" | "all";
    Page
 ========================= */
 export default function InventoryPage() {
+
+  async function downloadCsv() {
+    try {
+      // If you add filters, build a query string here to pass along.
+      const url = `${API_BASE}/api/admin/products/report`;
+      const res = await fetch(url, {
+        // if you want it protected:
+        // headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : undefined
+      });
+      if (!res.ok) throw new Error(`Download failed (${res.status})`);
+      const blob = await res.blob();
+      const urlObj = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = urlObj;
+      const d = new Date();
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0'); // 01-12
+      const year = d.getFullYear();
+      const hours = String(d.getHours()).padStart(2, "0");
+      const minutes = String(d.getMinutes()).padStart(2, "0");
+      const dt = `${day}-${month}-${year}-${hours}-${minutes}`;
+      a.download = `inventory-report-${dt}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(urlObj);
+    } catch (e) {
+      alert(`Failed to download report: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
   const [view, setView] = useState<View>("all");
   const [products, setProducts] = useState<UIProduct[]>([]);
   const [loading, setLoading] = useState(false);
@@ -119,7 +154,7 @@ export default function InventoryPage() {
       try {
         setLoading(true);
         setErr(null);
-        const res = await fetch(`${API_BASE}/api/products/admin`);
+        const res = await fetch(`${API_BASE}/api/admin/products`);
         if (!res.ok) throw new Error(`List failed (${res.status})`);
         const json = await res.json();
         const list: ApiProduct[] = Array.isArray(json) ? json : json.data ?? [];
@@ -135,46 +170,14 @@ export default function InventoryPage() {
   return (
     <div className="flex min-h-screen font-poppins bg-[#f4efe4]">
       {/* Sidebar (fixed) */}
-      <aside className="w-[260px] bg-[#d4bb8c] text-black p-6 flex flex-col">
-        <div className="flex flex-col items-center">
-          <div className="relative w-28 h-28 overflow-hidden rounded-full">
-            <Image
-              src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=400&auto=format&fit=crop"
-              alt="profile"
-              fill
-              className="object-cover"
-            />
-          </div>
-          <h2 className="font-semibold text-lg mt-3">Sathees Malavan</h2>
-          <p className="text-sm text-gray-800">satheesmalavan100@gmail.com</p>
-        </div>
+      <AdminNavBar />
 
-        <nav className="mt-8">
-          <ul className="space-y-2">
-            <li className="flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-white/70 cursor-pointer">
-              <ClipboardList size={18} /> DashBoard
-            </li>
-            <li className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white cursor-default">
-              <Box size={18} /> Inventory
-            </li>
-            <li className="flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-white/70 cursor-pointer">
-              <PackagePlus size={18} /> Orders
-            </li>
-            <li className="flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-white/70 cursor-pointer">
-              <Users size={18} /> Users
-            </li>
-          </ul>
-        </nav>
-
-        <button className="mt-auto text-red-700 text-sm font-semibold hover:underline">
-          LOGOUT
-        </button>
-      </aside>
 
       {/* Main */}
       <main className="flex-1 p-8">
-        <h1 className="text-2xl font-bold">Inventory</h1>
-
+        <div className="flex justify-end mt-15 mb-5">
+          <Buttons context="Download Report" icon={Download} onClick={downloadCsv} />
+        </div>
         <div className="flex items-center justify-center mb-6">
           <div className="flex gap-7 ">
             <ToolbarButton
@@ -210,7 +213,7 @@ export default function InventoryPage() {
               onCreated={async (ui) => {
                 try {
                   const token = getToken();
-                  const res = await fetch(`${API_BASE}/api/products/admin`, {
+                  const res = await fetch(`${API_BASE}/api/admin/products`, {
                     method: "POST",
                     headers: {
                       "Content-Type": "application/json",
@@ -237,7 +240,7 @@ export default function InventoryPage() {
                   }
                   const token = getToken();
                   const id = ui._id ?? ui.productId!;
-                  const res = await fetch(`${API_BASE}/api/products/admin/${id}`, {
+                  const res = await fetch(`${API_BASE}/api/admin/products/${id}`, {
                     method: "PATCH",
                     headers: {
                       "Content-Type": "application/json",
@@ -259,7 +262,7 @@ export default function InventoryPage() {
                 try {
                   const token = getToken();
                   const id = ui._id;
-                  const res = await fetch(`${API_BASE}/api/products/admin/${id}`, {
+                  const res = await fetch(`${API_BASE}/api/admin/products/${id}`, {
                     method: "DELETE",
                     headers: {
                       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -423,7 +426,7 @@ function AddNewProduct({ onCreated }: { onCreated: (p: UIProduct) => Promise<voi
 
         <label className="block text-sm font-medium mb-2">Category</label>
         <div className="flex gap-3 mb-6">
-          {(["T-Shirt", "MEN", "WOMEN"] as const).map((c) => (
+          {(["T-Shirt","Intimate"] as const).map((c) => (
             <button
               key={c}
               className={[
@@ -432,7 +435,7 @@ function AddNewProduct({ onCreated }: { onCreated: (p: UIProduct) => Promise<voi
               ].join(" ")}
               onClick={() => setForm((f) => ({ ...f, category: c }))}
             >
-              {c === "MEN" ? "MEN's underwear" : c === "WOMEN" ? "WOMAN's Underwear" : "T-Shirt"}
+              {c === "Intimate" ? "Intimate" : "T-Shirt"}
             </button>
           ))}
         </div>
@@ -534,19 +537,8 @@ function AddNewProduct({ onCreated }: { onCreated: (p: UIProduct) => Promise<voi
         />
 
         <div className="flex gap-3">
-          <button
-            disabled={!canCreate}
-            onClick={handleCreate}
-            className={[
-              "px-4 py-2 rounded-xl",
-              canCreate ? "bg-[#5f6f46] text-white" : "bg-gray-300 text-gray-600",
-            ].join(" ")}
-          >
-            ADD NEW PRODUCT
-          </button>
-          <button
-            className="px-4 py-2 rounded-xl bg-red-500/90 text-white"
-            onClick={() =>
+          <Buttons context="ADD NEW PRODUCT" disabled={!canCreate} onClick={handleCreate} />
+          <Buttons context="RESET" onClick={() =>
               setForm({
                 name: "",
                 description: "",
@@ -558,10 +550,7 @@ function AddNewProduct({ onCreated }: { onCreated: (p: UIProduct) => Promise<voi
                 colors: [],
                 sizes: [],
               })
-            }
-          >
-            RESET
-          </button>
+            } combo="redTransparent" className="px-10"/>
         </div>
       </div>
 
@@ -583,7 +572,7 @@ function AddNewProduct({ onCreated }: { onCreated: (p: UIProduct) => Promise<voi
           </div>
           <div className="grid grid-cols-[200px_1fr]">
             <dt className="font-semibold">Category</dt>
-            <dd>{form.category === "T-Shirt" ? "T-Shirt" : `${form.category}'s underwear`}</dd>
+            <dd>{form.category === "T-Shirt" ? "T-Shirt" : `${form.category}`}</dd>
           </div>
           <div className="grid grid-cols-[200px_1fr]">
             <dt className="font-semibold">Colors</dt>
@@ -696,18 +685,37 @@ function UpdateProduct({
 
       <label className="block text-sm font-medium">Stock</label>
       <div className="flex items-center gap-3 mb-4">
+        {/* Decrease Button */}
         <button
           className="px-2 py-1 rounded border"
           onClick={() =>
-            setSelected((s) => (s ? { ...s, stock: Math.max(0, s.stock - 1) } : s))
+            setSelected((s) =>
+              s ? { ...s, stock: Math.max(0, s.stock - 1) } : s
+            )
           }
         >
           –
         </button>
-        <span className="min-w-[32px] text-center">{selected.stock}</span>
+
+        {/* Editable Input */}
+        <input
+          type="number"
+          min={0}
+          value={selected.stock}
+          onChange={(e) =>
+            setSelected((s) =>
+              s ? { ...s, stock: Math.max(0, Number(e.target.value) || 0) } : s
+            )
+          }
+          className="w-20 text-center rounded border p-1 focus:ring-1 focus:ring-[#5f6f46] outline-none"
+        />
+
+        {/* Increase Button */}
         <button
           className="px-2 py-1 rounded border"
-          onClick={() => setSelected((s) => (s ? { ...s, stock: s.stock + 1 } : s))}
+          onClick={() =>
+            setSelected((s) => (s ? { ...s, stock: s.stock + 1 } : s))
+          }
         >
           +
         </button>
@@ -723,7 +731,7 @@ function UpdateProduct({
 
       <label className="block text-sm font-medium mb-2">Category</label>
       <div className="flex gap-3 mb-4">
-        {(["T-Shirt", "MEN", "WOMEN"] as const).map((c) => (
+        {(["T-Shirt", "Intimate"] as const).map((c) => (
           <button
             key={c}
             className={[
@@ -732,7 +740,7 @@ function UpdateProduct({
             ].join(" ")}
             onClick={() => setSelected({ ...selected, category: c })}
           >
-            {c === "MEN" ? "MEN's underwear" : c === "WOMEN" ? "WOMAN's Underwear" : "T-Shirt"}
+            {c === "Intimate" ? "Intimate" : "T-Shirt"}
           </button>
         ))}
       </div>
@@ -757,18 +765,9 @@ function UpdateProduct({
       />
 
       <div className="flex gap-3">
-        <button
-          className="px-4 py-2 rounded-xl bg-red-500/90 text-white"
-          onClick={() => setSelected(items[0] ?? null)}
-        >
-          RESET
-        </button>
-        <button
-          className="px-4 py-2 rounded-xl bg-[#5f6f46] text-white"
-          onClick={() => selected && onUpdated(selected)}
-        >
-          UPDATE PRODUCT
-        </button>
+        <Buttons context="RESET" combo="redTransparent" className="px-8" onClick={() => setSelected(items[0] ?? null)} />
+        
+        <Buttons context="UPDATE PRODUCT"  onClick={() => selected && onUpdated(selected)} />
       </div>
     </div>
   );
@@ -779,7 +778,7 @@ function UpdateProduct({
       {editor}
     </div>
   );
-}
+}            
 
 /* =========================
    All Products (list)

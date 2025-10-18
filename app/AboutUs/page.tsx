@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import Footer from "../components/footer/footer";
+import NavBar from "../components/nav-bar/nav-bar";
 
 export default function AboutPage() {
   const images = [
-    { src: "/images/factory.jpg", caption: "Our Factory" },
-    { src: "/images/team.jpg", caption: "Our Team" },
-    { src: "/images/fashion.jpg", caption: "Innovation in Fashion" },
-    { src: "/images/vision.jpg", caption: "Our Vision" },
+    { src: "/assets/images/hero_image_1.jpg", caption: "Our Factory" },
+    { src: "/assets/images/hero_image_2.jpg", caption: "Our Team" },
+    { src: "/assets/images/hero_image_3.jpg", caption: "Innovation in Fashion" },
+    { src: "/assets/images/product_image_1.jpg", caption: "Our Vision" },
   ];
 
   const [current, setCurrent] = useState(0);
@@ -22,6 +24,9 @@ export default function AboutPage() {
   }, [images.length]);
 
   return (
+    <div>
+      <NavBar />
+    
     <div className="bg-white min-h-screen">
       {/* Page Header */}
       <h1 className="text-4xl font-bold text-center py-8">About Us</h1>
@@ -66,7 +71,7 @@ export default function AboutPage() {
         {/* Our Story */}
         <section className="grid md:grid-cols-2 gap-8 items-center">
           <Image
-            src="/images/story.jpg"
+            src="/assets/images/hero_image_1.jpg"
             alt="Our Story"
             width={500}
             height={350}
@@ -93,7 +98,7 @@ export default function AboutPage() {
             </p>
           </div>
           <Image
-            src="/images/vision.jpg"
+            src="/assets/images/hero_image_2.jpg"
             alt="Our Vision"
             width={500}
             height={350}
@@ -104,7 +109,7 @@ export default function AboutPage() {
         {/* Our Mission */}
         <section className="grid md:grid-cols-2 gap-8 items-center">
           <Image
-            src="/images/mission.jpg"
+            src="/assets/images/hero_image_3.jpg"
             alt="Our Mission"
             width={500}
             height={350}
@@ -119,6 +124,8 @@ export default function AboutPage() {
           </div>
         </section>
       </div>
+    </div>
+          <Footer/>
     </div>
   );
 }
