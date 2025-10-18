@@ -3,7 +3,7 @@ import Link from 'next/link'
 import React from 'react'
 
 const CATEGORIES = [
-    { name: "WOMEN", image: "/assets/images/hero_image_1.jpg", link: "/category/women" },
+    { name: "WOMEN", image: "/assets/images/hero_image_1.jpg", link: "/AllProducts" },
     { name: "KIDS", image: "/assets/images/kids.jpg", link: "/AllProducts" },
     { name: "MENS", image: "/assets/images/men.jpg", link: "/AllProducts" },
   ];
