@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import {
-  Star,
   ChevronLeft,
   ChevronRight,
   SlashIcon,
@@ -13,6 +12,11 @@ import {
   Truck,
   RotateCcw,
 } from "lucide-react";
+import Link from "next/link";
+import Footer from "../components/footer/footer";
+import NavBar from "../components/nav-bar/nav-bar";
+import Buttons from "../components/common-components/button";
+import Stars from "../components/common-components/stars";
 
 import {
   Breadcrumb,
@@ -22,21 +26,30 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
-import Footer from "../components/footer/footer";
-import NavBar from "../components/nav-bar/nav-bar";
-import Link from "next/link";
-import Buttons from "../components/common-components/button";
+const API_BASE = "http://localhost:5000";
 
+type RatingSummary = { avgRating: number; ratingCount: number };
+
+/* ==========================
+   Helper Functions & Types
+========================== */
 function getErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
-  if (typeof err === "object" && err && "message" in err) {
+  if (typeof err === "object" && err && "message" in err)
     return String((err as { message?: unknown }).message);
-  }
   return "Something went wrong.";
 }
 
-
-
+function getToken(): string {
+  try {
+    const raw = localStorage.getItem("access_token");
+    if (!raw) return "";
+    const t = raw.trim();
+    return t && t !== "null" && t !== "undefined" ? t : "";
+  } catch {
+    return "";
+  }
+}
 
 type ApiUser = {
   userId: string;
@@ -55,58 +68,37 @@ type ApiProduct = {
   productName: string;
   description: string;
   price: number;
-  photoUrl: string;
+  photoUrl: string[] | string;
   colors: string[];
   sizes: string[];
   category: "T-Shirt" | "Intimate";
   stock: number;
+  avgRating?: number;     // NEW
+  ratingCount?: number;   // NEW
 };
 
-const API_BASE = "http://localhost:5000";
-
-function getToken(): string {
-  try {
-    const raw = localStorage.getItem("access_token");
-    if (!raw) return "";
-    const t = raw.trim();
-    return t && t !== "null" && t !== "undefined" ? t : "";
-  } catch {
-    return "";
-  }
-}
-
-
-
+/* ==========================
+   Component
+========================== */
 export default function ProductDetails() {
-
-  
-
   const search = useSearchParams();
   const paramId = search.get("id")?.trim() || "";
 
   const [currentUser, setCurrentUser] = useState<ApiUser | null>(null);
-
+  const [product, setProduct] = useState<ApiProduct | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-  const [product, setProduct] = useState<ApiProduct | null>(null);
 
-  
-
-  // UI selections
-  const defaultColor = useMemo(() => product?.colors?.[0] || "#EFDCC3", [product]);
-  const defaultSize = useMemo(() => product?.sizes?.[0] || "M", [product]);
-  const [color, setColor] = useState<string>(defaultColor);
-  const [size, setSize] = useState<string>(defaultSize);
+  const [color, setColor] = useState<string>("");
+  const [size, setSize] = useState<string>("");
   const [activeIdx, setActiveIdx] = useState(0);
 
-  // sync when product changes
-  useEffect(() => {
-    setColor(defaultColor);
-    setSize(defaultSize);
-    setActiveIdx(0);
-  }, [defaultColor, defaultSize]);
+  const [summary, setSummary] = useState<RatingSummary>({ avgRating: 0, ratingCount: 0 });
+  const [myRating, setMyRating] = useState<number>(0);
 
-  // load user once
+  /* ==========================
+     Auth Load
+  =========================== */
   useEffect(() => {
     const run = async () => {
       const token = getToken();
@@ -125,7 +117,6 @@ export default function ProductDetails() {
     run();
   }, []);
 
-  // load product
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -137,14 +128,19 @@ export default function ProductDetails() {
         }
         setLoading(true);
         setErr(null);
-        const res = await fetch(`${API_BASE}/api/products/${encodeURIComponent(paramId)}`);
+        const res = await fetch(`${API_BASE}/api/products/${encodeURIComponent(paramId)}?includeRatings=1`);
         if (!res.ok) {
           setErr(res.status === 404 ? "Product not found" : `Failed to load product (HTTP ${res.status})`);
           setProduct(null);
           return;
         }
         const doc: ApiProduct = await res.json();
-        if (!cancelled) setProduct(doc);
+        if (!cancelled) {
+          setProduct(doc);
+          setColor(doc.colors?.[0] || "#EFDCC3");
+          setSize(doc.sizes?.[0] || "M");
+          setSummary({ avgRating: doc.avgRating || 0, ratingCount: doc.ratingCount || 0 });
+        }
       } catch (e: unknown) {
         if (!cancelled) {
           setErr(getErrorMessage(e) || "Failed to load product");
@@ -159,27 +155,70 @@ export default function ProductDetails() {
     };
   }, [paramId]);
 
-  // simple 4 “thumbnails” – all the same image for now
+  /* ==========================
+     Product Load
+  =========================== */
+
+
+
+// handle user rating click
+async function handleRate(v: number) {
+  try {
+    if (!currentUser) {
+      alert("Please log in to rate.");
+      return;
+    }
+    setMyRating(v);
+    const resp = await fetch(`${API_BASE}/api/ratings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+      body: JSON.stringify({ productId: product?.productId, value: v }),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    setSummary({ avgRating: data.summary?.avgRating || 0, ratingCount: data.summary?.ratingCount || 0 });
+  } catch (err) {
+    console.error("rate error:", err);
+    alert("Failed to submit rating");
+  }
+}
+
+  /* ==========================
+     Thumbnails Setup
+  =========================== */
   const THUMBS = useMemo(() => {
-    const src = product?.photoUrl || "/assets/images/placeholder-tshirt.jpg";
-    return [
-      { src, alt: "Image 1" },
-      { src, alt: "Image 2" },
-      { src, alt: "Image 3" },
-      { src, alt: "Image 4" },
-    ];
-  }, [product?.photoUrl]);
+    if (!product) return [];
 
-  const go = (dir: -1 | 1) =>
+    // normalize array or string
+    let imgs: string[] = [];
+    if (Array.isArray(product.photoUrl)) {
+      imgs = product.photoUrl.filter((u) => typeof u === "string" && u.trim() !== "");
+    } else if (typeof product.photoUrl === "string" && product.photoUrl.trim() !== "") {
+      imgs = [product.photoUrl];
+    }
+
+    // only up to 5 images
+    return imgs.slice(0, 5).map((src, i) => ({
+      src,
+      alt: `${product.productName || "Product"} image ${i + 1}`,
+    }));
+  }, [product]);
+
+  const go = (dir: -1 | 1) => {
+    if (!THUMBS.length) return;
     setActiveIdx((i) => (i + dir + THUMBS.length) % THUMBS.length);
+  };
 
+  /* ==========================
+     UI Render
+  =========================== */
   return (
     <div>
       <NavBar />
 
       <main className="min-h-screen bg-gradient-to-b">
         <div className="mx-auto w-full max-w-6xl px-4 py-10 md:px-6 lg:px-8">
-          {/* breadcrumbs */}
+          {/* Breadcrumbs */}
           <nav className="mb-6 hidden text-sm text-gray-500 md:block">
             <Breadcrumb>
               <BreadcrumbList>
@@ -208,85 +247,98 @@ export default function ProductDetails() {
             </Breadcrumb>
           </nav>
 
-          {/* states */}
+          {/* States */}
           {loading && <p className="text-sm text-gray-600">Loading product…</p>}
           {!loading && err && <p className="text-sm text-red-600">Error: {err}</p>}
           {!loading && !err && !product && (
             <p className="text-sm text-gray-600">Product not found.</p>
           )}
 
+          {/* Product View */}
           {!loading && product && (
             <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-              {/* LEFT: gallery */}
-              <section aria-label="Product gallery" className="w-full">
-                {/* main image */}
-                <div className="relative w-full overflow-hidden rounded-2xl bg-white shadow-sm">
-                  <div className="relative aspect-[9/8] w-full">
-                    <Image
-                      src={THUMBS[activeIdx].src}
-                      alt={THUMBS[activeIdx].alt}
-                      fill
-                      className="object-cover"
-                      priority
-                    />
+              {/* LEFT — Gallery */}
+              <section className="w-full">
+                {THUMBS.length > 0 ? (
+                  <>
+                    {/* Main Image */}
+                    <div className="relative w-full overflow-hidden rounded-2xl bg-white shadow-sm">
+                      <div className="relative aspect-[9/8] w-full">
+                        <Image
+                          src={THUMBS[activeIdx].src}
+                          alt={THUMBS[activeIdx].alt}
+                          fill
+                          className="object-cover transition-all duration-300"
+                          priority
+                        />
+                      </div>
+
+                      {THUMBS.length > 1 && (
+                        <>
+                          <button
+                            aria-label="Previous"
+                            className="absolute left-3 top-1/2 hidden cursor-pointer -translate-y-1/2 rounded-full bg-white/90 p-2 shadow hover:bg-white lg:inline"
+                            onClick={() => go(-1)}
+                          >
+                            <ChevronLeft className="h-5 w-5" />
+                          </button>
+                          <button
+                            aria-label="Next"
+                            className="absolute right-3 top-1/2 hidden cursor-pointer -translate-y-1/2 rounded-full bg-white/90 p-2 shadow hover:bg-white lg:inline"
+                            onClick={() => go(1)}
+                          >
+                            <ChevronRight className="h-5 w-5" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Thumbnails */}
+                    {THUMBS.length > 1 && (
+                      <div className="mt-4 flex items-center gap-3">
+                        <button
+                          className="grid h-9 w-9 place-items-center cursor-pointer rounded-full border bg-white shadow hover:bg-gray-50 lg:hidden"
+                          onClick={() => go(-1)}
+                          aria-label="Previous thumbnail"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+
+                        <div className="flex w-full snap-x items-center gap-3 overflow-x-auto pb-1">
+                          {THUMBS.map((img, i) => (
+                            <button
+                              key={i}
+                              onClick={() => setActiveIdx(i)}
+                              className={`relative h-20 w-24 cursor-pointer flex-shrink-0 snap-start overflow-hidden rounded-lg border transition ${
+                                i === activeIdx
+                                  ? "border-emerald-600 ring-2 ring-emerald-200"
+                                  : "border-gray-200 hover:border-gray-300"
+                              }`}
+                            >
+                              <Image src={img.src} alt={img.alt} fill className="object-cover" />
+                            </button>
+                          ))}
+                        </div>
+
+                        <button
+                          className="grid h-9 w-9 cursor-pointer place-items-center rounded-full border bg-white shadow hover:bg-gray-50 lg:hidden"
+                          onClick={() => go(1)}
+                          aria-label="Next thumbnail"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="aspect-[9/8] w-full rounded-2xl bg-gray-100 flex items-center justify-center text-gray-500">
+                    No image available
                   </div>
-
-                  {/* desktop prev/next */}
-                  <button
-                    aria-label="Previous"
-                    className="absolute cursor-pointer left-3 top-1/2 z-10 hidden -translate-y-1/2 rounded-full bg-white/90 p-2 shadow hover:bg-white lg:inline"
-                    onClick={() => go(-1)}
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </button>
-                  <button
-                    aria-label="Next"
-                    className="absolute right-3 top-1/2 cursor-pointer z-10 hidden -translate-y-1/2 rounded-full bg-white/90 p-2 shadow hover:bg-white lg:inline"
-                    onClick={() => go(1)}
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </button>
-                </div>
-
-                {/* thumbnails */}
-                <div className="mt-4 flex items-center gap-3">
-                  <button
-                    className="grid h-9 w-9 place-items-center rounded-full border bg-white shadow hover:bg-gray-50 lg:hidden"
-                    onClick={() => go(-1)}
-                    aria-label="Previous thumbnail"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-
-                  <div className="flex w-full snap-x items-center gap-3 overflow-x-auto pb-1">
-                    {THUMBS.map((img, i) => (
-                      <button
-                        key={`${img.src}-${i}`}
-                        onClick={() => setActiveIdx(i)}
-                        aria-label={`Select image ${i + 1}`}
-                        className={`relative cursor-pointer h-20 w-24 flex-shrink-0 snap-start overflow-hidden rounded-lg border transition ${
-                          i === activeIdx
-                            ? "border-emerald-600 ring-2 ring-emerald-200"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
-                      >
-                        <Image src={img.src} alt={img.alt} fill className="object-cover" />
-                      </button>
-                    ))}
-                  </div>
-
-                  <button
-                    className="grid h-9 w-9 place-items-center rounded-full border bg-white shadow hover:bg-gray-50 lg:hidden"
-                    onClick={() => go(1)}
-                    aria-label="Next thumbnail"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
+                )}
               </section>
 
-              {/* RIGHT: details */}
-              <section aria-label="Product details" className="w-full">
+              {/* RIGHT — Product Info */}
+              <section className="w-full">
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div>
                     <h1 className="text-2xl font-bold text-gray-900">{product.productName}</h1>
@@ -294,60 +346,74 @@ export default function ProductDetails() {
                   </div>
                 </div>
 
-                {/* Price + sample rating */}
+                {/* Price */}
                 <div className="mb-6 space-y-1">
-                  <div className="flex items-center gap-4">
-                    <p className="text-3xl font-bold text-gray-900 font-poppins">Rs.{product.price}</p>
-                  </div>
+                  <p className="text-3xl font-bold text-gray-900 font-poppins">Rs.{product.price}</p>
+
+                  {/* Current average and count */}
                   <div className="flex items-center gap-3 text-sm">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-amber-700">
-                      <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                      4.2
-                    </span>
-                    <button className="rounded-full bg-indigo-50 px-2 py-1 text-indigo-700">
-                      27 Reviews
-                    </button>
-                    <span className="text-emerald-700">93%</span>
-                    <span className="text-gray-500">of buyers recommend this.</span>
+                    <Stars value={summary.avgRating} count={summary.ratingCount} />
+                  </div>
+
+                  {/* Clickable rating input */}
+                  <div className="flex items-center gap-1 mt-2">
+                    {Array.from({ length: 5 }).map((_, i) => {
+                      const v = i + 1;
+                      const filled = myRating ? v <= myRating : v <= Math.round(summary.avgRating);
+                      return (
+                        <button
+                          key={v}
+                          aria-label={`Rate ${v} star${v>1?"s":""}`}
+                          onClick={() => handleRate(v)}
+                          className="p-0.5"
+                          title={`Rate ${v}`}
+                        >
+                          <svg width="22" height="22" viewBox="0 0 24 24" className={filled ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}>
+                            <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.788 1.401 8.167L12 18.896l-7.335 3.869 1.401-8.167L.132 9.21l8.2-1.192z" />
+                          </svg>
+                        </button>
+                      );
+                    })}
+                    <span className="ml-2 text-xs text-gray-500">Tap to rate</span>
                   </div>
                 </div>
 
-                {/* Colors */}
+                {/* Color Selector */}
                 <div className="border-t py-5">
                   <h3 className="mb-3 text-sm font-semibold text-gray-800">Choose a Color</h3>
                   <div className="flex flex-wrap items-center gap-3">
-                    {(product.colors?.length ? product.colors : [defaultColor]).map((hex) => {
+                    {(product.colors?.length ? product.colors : [color]).map((hex) => {
                       const active = hex === color;
                       return (
                         <button
                           key={hex}
                           aria-label={hex}
-                          aria-pressed={active}
                           onClick={() => setColor(hex)}
-                          className={`relative grid h-10 w-10 place-items-center cursor-pointer rounded-full border transition ${
-                            active ? "border-emerald-600 ring-2 ring-emerald-200" : "border-gray-300 hover:border-gray-400"
+                          className={`relative h-10 w-10 flex cursor-pointer justify-center  items-center rounded-full border-2 transition ${
+                            active
+                              ? "border-emerald-600 ring-2 ring-emerald-200"
+                              : "border-gray-300 hover:border-gray-400"
                           }`}
                         >
-                          <span className="block h-8 w-8 rounded-full" style={{ backgroundColor: hex }} />
-                          {active && (
-                            <span className="pointer-events-none absolute inset-0 rounded-full ring-2 ring-offset-2 ring-emerald-600" />
-                          )}
+                          <span
+                            className="block h-10 w-10  rounded-full"
+                            style={{ backgroundColor: hex }}
+                          />
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* Sizes */}
+                {/* Size Selector */}
                 <div className="border-t py-5">
                   <h3 className="mb-3 text-sm font-semibold text-gray-800">Choose a Size</h3>
                   <div className="flex flex-wrap gap-2">
-                    {(product.sizes?.length ? product.sizes : [defaultSize]).map((s) => {
+                    {(product.sizes?.length ? product.sizes : [size]).map((s) => {
                       const active = s === size;
                       return (
                         <button
                           key={s}
-                          aria-pressed={active}
                           onClick={() => setSize(s)}
                           className={`rounded-md border px-3 py-1.5 text-sm cursor-pointer transition ${
                             active
@@ -362,7 +428,7 @@ export default function ProductDetails() {
                   </div>
                 </div>
 
-                {/* Info cards */}
+                {/* Info Cards */}
                 <div className="mt-6 space-y-3">
                   <div className="flex items-start gap-3 rounded-xl border bg-white p-4 shadow-sm">
                     <div className="grid h-10 w-10 place-items-center rounded-full bg-emerald-50 text-emerald-700">
@@ -371,8 +437,7 @@ export default function ProductDetails() {
                     <div>
                       <p className="font-medium text-gray-900">Delivery Charges Include</p>
                       <p className="text-sm text-gray-600">
-                        An additional delivery fee of <span className="font-poppins font-bold">Rs. 300</span> will be
-                        applied.
+                        Additional delivery fee of <b>Rs. 300</b> applies.
                       </p>
                     </div>
                   </div>
@@ -382,31 +447,32 @@ export default function ProductDetails() {
                       <RotateCcw className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">Return Delivery</p>
-                      <p className="text-sm text-gray-600">Free 14 days Delivery Return.</p>
+                      <p className="font-medium text-gray-900">Return Policy</p>
+                      <p className="text-sm text-gray-600">Free 14-day return period.</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Selected summary + CTAs */}
-                <span className="text-sm text-gray-500 flex my-3 gap-3">
-                  Selected size: <b>{size}</b>{" "}
-                  <span className="inline-flex items-center gap-2">
-                    Selected Colour :
-                    <span className="inline-block h-4 w-4 rounded-full border" style={{ backgroundColor: color }} />
-                    <code className="text-gray-600">{color}</code>
-                  </span>
-                </span>
+                {/* Selection Summary */}
+                <p className="text-sm text-gray-600 flex my-3 gap-3">
+                  Selected size: <b>{size}</b> | Color:
+                  <span
+                    className="inline-block h-4 w-4 rounded-full border ml-1"
+                    style={{ backgroundColor: color }}
+                  />
+                  <code className="text-gray-600">{color}</code>
+                </p>
 
+                {/* Buttons */}
                 <div className="mt-6 flex flex-wrap items-center gap-3">
                   {currentUser && product.category === "T-Shirt" ? (
                     <Link
-                    href={`/Customization?id=${encodeURIComponent(product.productId)}&size=${encodeURIComponent(
-                      size
-                    )}&color=${encodeURIComponent(color)}`}
-                  >
-                    <Buttons context="CUSTOMIZE" icon={Brush} />
-                  </Link>
+                      href={`/Customization?id=${encodeURIComponent(
+                        product.productId
+                      )}&size=${encodeURIComponent(size)}&color=${encodeURIComponent(color)}`}
+                    >
+                      <Buttons context="CUSTOMIZE" icon={Brush} />
+                    </Link>
                   ) : (
                     <Buttons context="CUSTOMIZE" icon={Brush} disabled />
                   )}

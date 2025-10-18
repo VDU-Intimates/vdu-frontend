@@ -1,26 +1,79 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft } from 'lucide-react';
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { ArrowLeft, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import CartItem from '../components/cart/cart-item';
 import OrderSummary from '../components/cart/order-summary';
-import DeliveringTo from '../components/cart/delivering-to';
+import DeliveringTo, { DeliveryInfo } from '../components/cart/delivering-to';
 import NavBar from '../components/nav-bar/nav-bar';
 import Footer from '../components/footer/footer';
+import { loadStripe, Stripe } from '@stripe/stripe-js';
+import BackButton from '../components/common-components/back-button';
+
+const API_BASE = 'http://localhost:5000';
+
+type CustomText = {
+  content: string;
+  fontFamily?: string;
+  fontSize?: number;
+  color?: string;
+  left?: number;
+  top?: number;
+  angle?: number;
+};
+
+interface CartItemType {
+  id: string;
+  productId: string;
+  productName: string;
+  price: number;
+  photoUrl: string;
+  size: string;
+  quantity: number;
+  custom?: {
+    isCustomized?: boolean;
+    designId?: string;
+    previewUrl?: string;
+    imageUrls?: string[];
+    texts?: CustomText[];
+    color?: string;
+    note?: string;
+  };
+}
 
 const CartPage = () => {
-  const [cartItems, setCartItems] = useState([]);
-  const [isLoading, setIsLoading] = useState(true); // Start with loading true
+  const router = useRouter();
+
+  const [cartItems, setCartItems] = useState<CartItemType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Form data for delivery
-  const [deliveryInfo, setDeliveryInfo] = useState({
+  const [deliveryInfo, setDeliveryInfo] = useState<DeliveryInfo>({
     fullName: '',
     address: '',
     phoneNumber: '',
-    email: ''
+    email: '',
+    paymentMethod: 'cod',
   });
 
-  // Fetch cart data when component mounts
+  const getAuthToken = (): string | null =>
+    localStorage.getItem('authToken') ||
+    localStorage.getItem('token') ||
+    localStorage.getItem('access_token') ||
+    localStorage.getItem('jwt') ||
+    localStorage.getItem('userToken');
+
+  const handleDeliveryInputChange = (field: keyof DeliveryInfo, value: string) => {
+    setDeliveryInfo((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleClearDeliveryInfo = () => {
+    setDeliveryInfo({ fullName: '', address: '', phoneNumber: '', email: '', paymentMethod: 'cod' });
+  };
+
   useEffect(() => {
     fetchCartData();
   }, []);
@@ -29,180 +82,91 @@ const CartPage = () => {
     try {
       setIsLoading(true);
       setError(null);
+      const token = getAuthToken();
+      if (!token) { setError('Please log in first.'); return; }
 
-      // Debug: Check all possible token locations
-      const authToken = localStorage.getItem('authToken');
-      const token = localStorage.getItem('token');
-      const access_token = localStorage.getItem('access_token');
-      const jwtToken = localStorage.getItem('jwt');
-      const userToken = localStorage.getItem('userToken');
-
-      console.log('Debug - Available tokens:', {
-        authToken: authToken ? 'exists' : 'null',
-        token: token ? 'exists' : 'null',
-        accessToken: access_token ? 'exists' : 'null',
-        jwtToken: jwtToken ? 'exists' : 'null',
-        userToken: userToken ? 'exists' : 'null'
+      const res = await fetch(`${API_BASE}/api/cart`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
 
-      // Get token from localStorage - check all common locations
-      const finalToken = authToken || token || access_token || jwtToken || userToken;
-
-      console.log('Debug - Using token:', finalToken ? `${finalToken.substring(0, 20)}...` : 'NO TOKEN FOUND');
-
-      if (!finalToken) {
-        setError('No authentication token found. Please log in again.');
-        return;
-      }
-
-      const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${finalToken}`
-      };
-
-      console.log('Debug - Request headers:', headers);
-
-      const response = await fetch('http://localhost:5000/api/cart', {
-        method: 'GET',
-        headers: headers
-      });
-
-      console.log('Debug - Response status:', response.status);
-      console.log('Debug - Response headers:', [...response.headers.entries()]);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.log('Debug - Error response body:', errorText);
-        
-        if (response.status === 401) {
-          setError('Authentication failed. Please log in again.');
-          // Optionally clear invalid tokens
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('token');
-          localStorage.removeItem('accessToken');
-          return;
-        }
-        throw new Error(`Failed to fetch cart: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
-      console.log('Debug - Cart data received:', data);
-      
-      // Transform backend data to match frontend expectations
-      const transformedItems = data.items.map(item => ({
-        id: item.productId,
-        name: item.productName,
-        price: item.price,
-        imageUrl: item.photoUrl,
-        size: item.size,
-        quantity: item.quantity
+      const transformed: CartItemType[] = (data.items || []).map((it: any) => ({
+        id: it._id,
+        productId: it.productId,
+        productName: it.productName,
+        price: it.price,
+        photoUrl: Array.isArray(it.photoUrl) ? (it.photoUrl[0] || '') : (it.photoUrl || ''),
+        size: it.size,
+        quantity: it.quantity,
+        custom: it.custom?.isCustomized
+          ? {
+              isCustomized: true,
+              designId: it.custom.designId || undefined,
+              previewUrl: it.custom.previewUrl || undefined,
+              imageUrls: Array.isArray(it.custom.imageUrls) ? it.custom.imageUrls : undefined,
+              texts: Array.isArray(it.custom.texts) ? it.custom.texts : undefined,
+              color: it.custom.color || undefined,
+              note: it.custom.note || undefined,
+            }
+          : undefined,
       }));
 
-      console.log('Debug - Transformed items:', transformedItems);
-      setCartItems(transformedItems);
+      setCartItems(transformed);
     } catch (err) {
-      console.error('Error fetching cart:', err);
-      setError('Failed to load cart items');
+      console.error('Fetch cart error:', err);
+      setError('Failed to load cart');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Calculate totals - use backend subtotal if available, otherwise calculate
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const discountPercent = 20;
-  const discountAmount = Math.round((subtotal * discountPercent) / 100);
-  const deliveryFee = 300;
-  const total = subtotal - discountAmount + deliveryFee;
+  const orderTotals = useMemo(() => {
+    const subtotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
+    const discountPercent = 20;
+    const discountAmount = Math.round((subtotal * discountPercent) / 100);
+    const deliveryFee = 300;
+    const total = subtotal - discountAmount + deliveryFee;
+    return { subtotal, discountPercent, discountAmount, deliveryFee, total };
+  }, [cartItems]);
 
-  // Update quantity in backend and frontend
-  const handleQuantityChange = async (itemId, newQuantity) => {
-    if (newQuantity <= 0) {
-      handleRemoveItem(itemId);
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem('authToken') || 
-                   localStorage.getItem('token') || 
-                   localStorage.getItem('accessToken');
-
-      // Update in backend (you'll need to create this endpoint)
-      const response = await fetch(`http://localhost:5000/api/cart/update`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        },
-        body: JSON.stringify({
-          productId: itemId,
-          quantity: newQuantity
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update quantity');
-      }
-
-      // Update frontend state
-      setCartItems(prevItems =>
-        prevItems.map(item =>
-          item.id === itemId ? { ...item, quantity: newQuantity } : item
-        )
-      );
-    } catch (error) {
-      console.error('Error updating quantity:', error);
-      alert('Failed to update quantity. Please try again.');
-    }
+  const handleQuantityChange = async (itemId: string, newQty: number) => {
+    if (newQty < 1) return handleRemoveItem(itemId);
+    const token = getAuthToken();
+    await fetch(`${API_BASE}/api/cart/${itemId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ quantity: newQty }),
+    });
+    setCartItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, quantity: newQty } : it)));
   };
 
-  // Remove item from backend and frontend
-  const handleRemoveItem = async (itemId) => {
-    try {
-      const token = localStorage.getItem('authToken') || 
-                   localStorage.getItem('token') || 
-                   localStorage.getItem('accessToken');
+  const handleRemoveItem = async (itemId: string) => {
+    const token = getAuthToken();
+    await fetch(`${API_BASE}/api/cart/${itemId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setCartItems((prev) => prev.filter((it) => it.id !== itemId));
+  };
 
-      // Remove from backend (you'll need to create this endpoint)
-      const response = await fetch(`http://localhost:5000/api/cart/remove`, {
+  const clearCart = async () => {
+    try {
+      const token = getAuthToken();
+      await fetch(`${API_BASE}/api/cart/deleteAll`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        },
-        body: JSON.stringify({
-          productId: itemId
-        })
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to remove item');
-      }
-
-      // Update frontend state
-      setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
+      setCartItems([]);
     } catch (error) {
-      console.error('Error removing item:', error);
-      alert('Failed to remove item. Please try again.');
+      console.error('Error clearing cart:', error);
     }
   };
 
-  const handleDeliveryInputChange = (field, value) => {
-    setDeliveryInfo(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleOrderConfirm = async () => {
-    // Get userId from token (you might want to decode JWT properly)
-    const token = localStorage.getItem('authToken') || 
-                 localStorage.getItem('token') || 
-                 localStorage.getItem('accessToken');
-    
-    if (!token) {
-      alert('Please log in to place an order');
-      return;
-    }
-
-    // Validate delivery information
+  // --- COD order
+  const placeOrderCOD = async () => {
+    const token = getAuthToken();
+    if (!token) { alert('Please log in to place an order'); return; }
     if (!deliveryInfo.fullName || !deliveryInfo.address || !deliveryInfo.phoneNumber) {
       alert('Please fill in all required delivery information (Full Name, Address, Phone Number)');
       return;
@@ -210,216 +174,325 @@ const CartPage = () => {
 
     setIsLoading(true);
     try {
-      const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-      const formattedItems = cartItems.map(item => ({
-        name: item.name,
-        productId: item.id,
-        customisedProductId: null,
+      // const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+      const formattedItems = cartItems.map((item) => ({
+        name: item.productName,
+        productId: item.productId,
+        size: item.size,
+        customisedProductId: item.custom?.designId || null,
         quantity: item.quantity,
-        unitPrice: item.price
+        unitPrice: item.price,
+        isCustomized: !!item.custom,
+        customPreviewUrl: item.custom?.previewUrl || '',
+        customImageUrls: item.custom?.imageUrls || [],
+        customTexts: item.custom?.texts || [],
       }));
 
-      // Place order
-      const orderResponse = await fetch('http://localhost:5000/api/orders/place-order', {
+      const orderResponse = await fetch(`${API_BASE}/api/orders/place-order`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          subTotal: subtotal,
-          deliverFee: deliveryFee,
-          discount: discountAmount,
-          totalAmount: total,
+          subTotal: orderTotals.subtotal,
+          deliverFee: orderTotals.deliveryFee,
+          discount: orderTotals.discountAmount,
+          totalAmount: orderTotals.total,
           date: new Date(),
-          quantity: totalQuantity,
-          isBulk: totalQuantity > 500,
           items: formattedItems,
-          deliveryInfo: deliveryInfo
-        })
+          paymentType: 'COD',
+        }),
       });
 
       if (!orderResponse.ok) {
-        if (orderResponse.status === 401) {
-          alert('Session expired. Please log in again.');
-          return;
-        }
-        throw new Error(`Order API error! status: ${orderResponse.status}`);
+        const errorData = await orderResponse.json().catch(() => ({}));
+        throw new Error(errorData.message || `Order API error! status: ${orderResponse.status}`);
       }
 
-      const orderData = await orderResponse.json();
-      console.log('Order placed:', orderData);
+      const out = await orderResponse.json();
+      const orderId = out.orderId || out.order?.orderId;
+      if (!orderId) throw new Error('Order placed but no order ID received');
 
-      // Create delivery record
-      const deliveryResponse = await fetch('http://localhost:5000/api/deliveries/create-delivery', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          orderId: orderData.orderId,
-          deliverFee: deliveryFee,
-          customerName: deliveryInfo.fullName,
-          address: deliveryInfo.address,
-          phone: deliveryInfo.phoneNumber,
-          email: deliveryInfo.email || ''
-        })
-      });
-
-      if (!deliveryResponse.ok) {
-        console.error('Failed to create delivery record, but order was placed successfully');
+      // create delivery (best-effort)
+      try {
+        await fetch(`${API_BASE}/api/deliveries/create-delivery`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            orderId,
+            deliverFee: orderTotals.deliveryFee,
+            customerName: deliveryInfo.fullName,
+            address: deliveryInfo.address,
+            phone: deliveryInfo.phoneNumber,
+            email: deliveryInfo.email || '',
+          }),
+        });
+      } catch (deliveryErr) {
+        console.error('Delivery creation failed:', deliveryErr);
       }
 
-      // Clear cart (both frontend and backend)
       await clearCart();
-      setDeliveryInfo({ fullName: '', address: '', phoneNumber: '', email: '' });
-      alert('Order confirmed and delivery scheduled successfully!');
-      
+      setDeliveryInfo({ fullName: '', address: '', phoneNumber: '', email: '', paymentMethod: 'cod' });
+      router.push(`/Invoice?orderId=${encodeURIComponent(orderId)}`);
     } catch (error) {
-      console.error('Error placing order:', error);
-      alert('Failed to place order. Please try again.');
+      console.error('COD order error:', error);
+      alert((error as Error).message || 'Failed to place order.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Clear cart after successful order
-  const clearCart = async () => {
-    try {
-      const token = localStorage.getItem('authToken') || 
-                   localStorage.getItem('token') || 
-                   localStorage.getItem('accessToken');
+  // --- Stripe
+  const startStripeCheckout = async () => {
+    const token = getAuthToken();
+    if (!token) { alert('Please log in to pay'); return; }
+    if (!deliveryInfo.fullName || !deliveryInfo.address || !deliveryInfo.phoneNumber || !deliveryInfo.email) {
+      alert('Please fill in delivery details first');
+      return;
+    }
 
-      await fetch('http://localhost:5000/api/cart/clear', {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+    setIsLoading(true);
+    try {
+      const items = cartItems.map((i) => ({
+        productId: i.productId,
+        name: i.productName,
+        price: i.price,
+        quantity: i.quantity,
+        image: i.custom?.previewUrl || i.photoUrl,
+        // include size in metadata on backend if you can
+        size: i.size,
+        custom: i.custom ? { designId: i.custom.designId, color: i.custom.color } : undefined,
+      }));
+
+      const resp = await fetch(`${API_BASE}/api/payments/create-checkout-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          items,
+          deliveryInfo,
+          totals: {
+            subTotal: orderTotals.subtotal,
+            discountAmount: orderTotals.discountAmount,
+            deliveryFee: orderTotals.deliveryFee,
+            total: orderTotals.total,
+          },
+        }),
       });
 
-      setCartItems([]);
-    } catch (error) {
-      console.error('Error clearing cart:', error);
+      if (!resp.ok) {
+        const msg = await resp.text();
+        throw new Error(`Failed to create checkout session: ${msg}`);
+      }
+
+      const data = await resp.json();
+
+      if (data.url) {
+        window.location.href = data.url;
+        return;
+      }
+
+      const pk = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY as string;
+      if (!pk) throw new Error('Missing NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY');
+      const stripe: Stripe | null = await loadStripe(pk);
+      if (!stripe) throw new Error('Stripe failed to initialize');
+
+      const { error } = await (stripe as any).redirectToCheckout({ sessionId: data.id });
+      if (error) throw error;
+    } catch (err) {
+      console.error('Stripe checkout error:', err);
+      alert((err as Error).message || 'Payment init failed');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleClearDeliveryInfo = () => {
-    setDeliveryInfo({ fullName: '', address: '', phoneNumber: '', email: '' });
+  const handleOrderConfirm = async () => {
+    if (deliveryInfo.paymentMethod === 'payNow') {
+      await startStripeCheckout();
+    } else {
+      await placeOrderCOD();
+    }
   };
 
-  const handleContinueShopping = () => {
-    window.history.back();
-  };
-  const handleStartShopping = () => {
-    window.location.assign("/AllProducts")
-  };
+  // --- Stripe success: build items FROM /payments/confirm response (not cartItems)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const isSuccess = params.get('payment') === 'success';
+    const sessionId = params.get('session_id');
+    if (!isSuccess || !sessionId) return;
 
-  // Error state
-  if (error && !isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center mb-6">
-            <button onClick={handleContinueShopping} className="flex items-center text-gray-700 hover:text-gray-900">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Continue Shopping
-            </button>
-          </div>
-          <div className="text-center py-16 bg-white rounded-lg">
-            <p className="text-red-500 text-lg mb-4">{error}</p>
-            <button 
-              onClick={fetchCartData}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              Try Again
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+    const run = async () => {
+      try {
+        setIsLoading(true);
+        const token = getAuthToken();
+        if (!token) throw new Error('Not authorized');
+
+        // 1) Confirm the payment -> get canonical items + totals from backend
+        const confirmRes = await fetch(`${API_BASE}/api/payments/confirm`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ sessionId }),
+        });
+        if (!confirmRes.ok) throw new Error(await confirmRes.text());
+        const { items: confirmedItems, totals, deliveryInfo: deliveryInfoFromServer } = await confirmRes.json();
+
+        // 2) Transform confirmed items to OrderItem shape
+        // Make sure your backend put `size` + customization into the confirm response's items metadata
+        const itemsForOrder = (confirmedItems || []).map((i: any) => ({
+          name: i.name,
+          productId: i.productId,
+          size: i.size,                                  // must be present (from metadata)
+          customisedProductId: i.custom?.designId || null,
+          quantity: Number(i.quantity || 0),
+          unitPrice: Number(i.unitPrice || 0),           // *** already major units from backend ***
+          isCustomized: !!i.custom,
+          customPreviewUrl: i.image || '',
+          customImageUrls: i.custom?.imageUrls || [],
+          customTexts: i.custom?.texts || [],
+        })).filter((x: any) => x.productId && x.size && x.quantity > 0);
+
+        if (!itemsForOrder.length) {
+          throw new Error('No purchasable items returned from payment confirmation');
+        }
+
+        // 3) Place order with ONLINE payment
+        const orderRes = await fetch(`${API_BASE}/api/orders/place-order`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            subTotal: totals.subTotal,
+            deliverFee: totals.deliveryFee,
+            discount: totals.discountAmount,
+            totalAmount: totals.totalAmount,
+            date: new Date(),
+            items: itemsForOrder,
+            paymentType: 'ONLINE',
+          }),
+        });
+        if (!orderRes.ok) throw new Error(await orderRes.text());
+        const savedOrder = await orderRes.json();
+        const orderId = savedOrder.orderId || savedOrder.order?.orderId;
+        if (!orderId) throw new Error('Order placed but no order ID returned');
+
+        // 4) Create Delivery
+        try {
+          await fetch(`${API_BASE}/api/deliveries/create-delivery`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+              orderId,
+              deliverFee: totals.deliveryFee,
+              customerName: deliveryInfoFromServer.fullName,
+              address: deliveryInfoFromServer.address,
+              phone: deliveryInfoFromServer.phoneNumber,
+              email: deliveryInfoFromServer.email || '',
+            }),
+          });
+        } catch (deliveryErr) {
+          console.error('Delivery creation failed:', deliveryErr);
+        }
+
+        // 5) Clear cart (best-effort)
+        try {
+          await fetch(`${API_BASE}/api/cart/deleteAll`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` },
+          });
+        } catch {}
+
+        // 6) Clean URL & go invoice
+        const url = new URL(window.location.href);
+        url.searchParams.delete('payment');
+        url.searchParams.delete('session_id');
+        window.history.replaceState({}, '', url.toString());
+
+        router.push(`/Invoice?orderId=${encodeURIComponent(orderId)}`);
+      } catch (e) {
+        console.error(e);
+        alert((e as Error).message || 'Failed to finalize order.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    run();
+  }, []);
 
   return (
     <div>
       <NavBar />
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center mb-6">
-          <button onClick={handleContinueShopping} className="flex items-center text-gray-700 hover:text-gray-900">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Continue Shopping
-          </button>
-        </div>
-        <hr className="border-gray-300 mb-6" />
-
-        {/* Loading state */}
-        {isLoading ? (
-          <div className="flex justify-center items-center py-16">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-2">Loading cart...</span>
+      <main className="min-h-screen bg-gray-50 p-4 font-poppins">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex justify-between items-center mb-6">
+            <BackButton label="Continue Shopping" />
+            {cartItems.length > 0 && (
+              <button
+                onClick={() =>
+                  fetch(`${API_BASE}/api/cart/deleteAll`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${getAuthToken()}` },
+                  }).then(fetchCartData)
+                }
+                className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+              >
+                <Trash2 className="w-4 h-4" /> Clear Cart
+              </button>
+            )}
           </div>
-        ) : (
-          <>
-            {/* Shopping Cart Section */}
-            <div className="mb-8">
-              <h2 className="text-lg font-medium text-gray-900 mb-2">Shopping cart</h2>
-              <p className="text-sm text-gray-600 mb-6">
-                You have {cartItems.length} item{cartItems.length !== 1 ? 's' : ''} in your cart
-              </p>
 
-              {/* Empty cart state */}
-              {cartItems.length === 0 ? (
-                <div className="text-center py-16 bg-white rounded-lg">
-                  <p className="text-gray-500 text-lg mb-4">Your cart is empty</p>
-                  <button onClick={handleStartShopping} className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                    Start Shopping
-                  </button>
-                </div>
-              ) : (
-                <>
-                  {/* Cart Items */}
-                  <div className="space-y-4 mb-8">
-                    {cartItems.map((item) => (
-                      <CartItem
-                        key={item.id}
-                        item={item}
-                        onQuantityChange={handleQuantityChange}
-                        onRemove={handleRemoveItem}
-                        currency="Rs."
-                      />
-                    ))}
-                  </div>
-
-                  {/* Main Content Grid */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <OrderSummary
-                      subtotal={subtotal}
-                      discountPercent={discountPercent}
-                      discountAmount={discountAmount}
-                      deliveryFee={deliveryFee}
-                      total={total}
-                      currency="Rs."
-                    />
-                    <DeliveringTo
-                      deliveryInfo={deliveryInfo}
-                      onInputChange={handleDeliveryInputChange}
-                      onClear={handleClearDeliveryInfo}
-                      onOrderConfirm={handleOrderConfirm}
-                      isLoading={isLoading}
-                    />
-                  </div>
-                </>
-              )}
+          {error && !isLoading ? (
+            <div className="text-center py-20 bg-white rounded-lg">
+              <p className="text-red-500 mb-4">{error}</p>
+              <button onClick={fetchCartData} className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                Try Again
+              </button>
             </div>
-          </>
-        )}
-      </div>
-    </div>
-    <Footer />
-    </div>
+          ) : isLoading ? (
+            <div className="flex justify-center py-16">Loading...</div>
+          ) : cartItems.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-lg">
+              <p className="text-gray-500 mb-4">Your cart is empty</p>
+              <button onClick={() => router.push('/AllProducts')} className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                Start Shopping
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+              <div className="lg:col-span-3 space-y-4">
+                <h2 className="text-lg font-medium text-gray-900 mb-4">Your Cart</h2>
+                {cartItems.map((item) => (
+                  <CartItem
+                    key={`${item.id}:${item.custom?.designId || item.custom?.previewUrl || 'BASE'}`}
+                    item={item}
+                    onQuantityChange={handleQuantityChange}
+                    onRemove={handleRemoveItem}
+                    currency="Rs."
+                  />
+                ))}
+              </div>
 
+              <div className="lg:col-span-2 space-y-6">
+                <OrderSummary
+                  subtotal={orderTotals.subtotal}
+                  discountPercent={orderTotals.discountPercent}
+                  discountAmount={orderTotals.discountAmount}
+                  deliveryFee={orderTotals.deliveryFee}
+                  total={orderTotals.total}
+                  currency="Rs."
+                />
+                <DeliveringTo
+                  deliveryInfo={deliveryInfo}
+                  onInputChange={handleDeliveryInputChange}
+                  onClear={handleClearDeliveryInfo}
+                  onOrderConfirm={handleOrderConfirm}
+                  isLoading={isLoading}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
+      <Footer />
+    </div>
   );
 };
 

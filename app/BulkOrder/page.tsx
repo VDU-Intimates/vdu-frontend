@@ -24,16 +24,25 @@ type Product = {
   productId: string;       // business id (keep for display)
   productName: string;
   price: number;
-  photoUrl: string;
+  photoUrl: string[];
   category: string;
   sizes?: string[];
 };
 
+type AddToCartItem = {
+  productId: string;   // can be business productId or Mongo _id (controller resolves either)
+  size: string;
+  quantity: number;
+};
+
 type SelectionItem = {
   // populated document from backend:
-  productId: Product;      // populated Product doc
+  productId: Product | null;      // populated Product doc
   size: string;
   qty: number;
+  status: 'in_review' | 'in_cart' | 'ordered' | 'removed'; // <-- NEW
+  unitPriceSnapshot?: number;        // optional snapshots from backend
+  productNameSnapshot?: string;
 };
 
 type SelectionDoc = { items: SelectionItem[] };
@@ -64,7 +73,7 @@ export default function BulkOrders() {
     const load = async () => {
       setLoadingProducts(true);
       try {
-        const res = await fetch(`${API_BASE}/api/products`, { cache: 'no-store' });
+        const res = await fetch(`${API_BASE}/api/products`);
         if (!res.ok) throw new Error(`Failed products (${res.status})`);
         const payload = await res.json();
         const list: Product[] = payload?.data || payload || [];
@@ -102,6 +111,26 @@ export default function BulkOrders() {
   useEffect(() => {
     loadReview();
   }, []);
+
+  const bulkItems: AddToCartItem[] = useMemo(() => {
+    return review
+      .filter(
+        (it) =>
+          it.status === 'in_review' &&
+          typeof it.productId === 'object' &&
+          it.productId !== null
+      )
+      .map((it) => {
+        const p = it.productId as Product;
+        // Prefer business productId if present; fall back to Mongo _id
+        const idForCart = p.productId || p._id;
+        return {
+          productId: idForCart,
+          size: it.size,
+          quantity: it.qty,
+        };
+      });
+  }, [review]);
 
   const toggle = (id: string) =>
     setRows((s) => ({ ...s, [id]: { ...s[id], selected: !s[id]?.selected } }));
@@ -156,7 +185,7 @@ export default function BulkOrders() {
     }
   };
 
-  const removeOne = async (mongoId: string, size: string) => {
+  const removeOne = async (mongoId: string | null, size: string) => {
     try {
       const res = await fetch(`${API_BASE}/api/selections/remove`, {
         method: 'POST',
@@ -174,14 +203,14 @@ export default function BulkOrders() {
     }
   };
 
-  const totalValue = useMemo(
-    () =>
-      review.reduce((sum, it) => {
-        const price = it.productId?.price ?? 0;
-        return sum + price * it.qty;
-      }, 0),
-    [review]
-  );
+  // const totalValue = useMemo(
+  //   () =>
+  //     review.reduce((sum, it) => {
+  //       const price = it.productId?.price ?? 0;
+  //       return sum + price * it.qty;
+  //     }, 0),
+  //   [review]
+  // );
 
   return (
     <div>
@@ -248,7 +277,7 @@ export default function BulkOrders() {
                             <div className="flex items-center gap-3">
                               <div className="relative size-10 overflow-hidden rounded-md ring-1 ring-gray-200 shrink-0">
                                 <Image
-                                  src={p.photoUrl || '/assets/images/placeholder-tshirt.jpg'}
+                                  src={p.photoUrl[0] || '/assets/images/placeholder-tshirt.jpg'}
                                   alt={p.productName}
                                   fill
                                   className="object-cover"
@@ -348,87 +377,146 @@ export default function BulkOrders() {
 
           {/* RIGHT: Review Selection */}
           <section className="rounded-xl border border-black/10 bg-[#e5d8bd] p-4 sm:p-6">
-            <h2 className="mb-4 text-center text-xl font-semibold underline">Review Selection</h2>
+  <h2 className="mb-4 text-center text-xl font-semibold underline">Review Selection</h2>
 
-            {loadingReview && <p className="text-sm text-gray-600">Loading selection…</p>}
+  {loadingReview && <p className="text-sm text-gray-600">Loading selection…</p>}
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-1 xl:px-10 lg:min-w-[300px]">
-              {!loadingReview && review.length === 0 && (
-                <p className="col-span-full rounded-lg bg-white/70 p-6 text-center text-sm text-gray-600">
-                  Nothing here yet. Select items on the left and press “Add Selected Items”.
-                </p>
-              )}
+  <div className="grid grid-cols-1 gap-4 sm:grid-cols-1 xl:px-10 lg:min-w-[300px]">
+    {!loadingReview && review.length === 0 && (
+      <p className="col-span-full rounded-lg bg-white/70 p-6 text-center text-sm text-gray-600">
+        Nothing here yet. Select items on the left and press “Add Selected Items”.
+      </p>
+    )}
 
-              {review.map((it) => (
-                <article
-                  key={`${it.productId._id}-${it.size}`}
-                  className="rounded-xl bg-white shadow-sm ring-1 ring-black/40 gap-5 lg:min-w-[300px]"
-                >
-                  <div className="p-3">
-                    <div className="relative mx-auto h-40 w-full overflow-hidden rounded-lg">
-                      <Image
-                        src={it.productId.photoUrl || '/assets/images/placeholder-tshirt.jpg'}
-                        alt={it.productId.productName}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
+    {review.map((it) => {
+      // it.productId may be: populated object | string id | null
+      const productObj = typeof it.productId === 'object' && it.productId !== null ? it.productId : null;
+      const productIdRaw =
+        productObj?._id ??
+        (typeof it.productId === 'string' ? it.productId : null);
 
-                    <div className="mt-3 rounded-lg border flex flex-col gap-2 border-gray-200 px-3 py-2 text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700 font-semibold">Product Name</span>
-                        <span className="font-medium text-gray-900">{it.productId.productName}</span>
-                      </div>
+      const unavailable = !productObj;
+      const imgSrc =
+        productObj?.photoUrl?.[0] ?? '/assets/images/placeholder-tshirt.jpg';
+      const productName = productObj?.productName ?? 'Product unavailable (deleted)';
+      const unitPrice = Number(productObj?.price ?? 0);
+      const lineTotal = unitPrice * it.qty;
 
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700 font-semibold">Size</span>
-                        <span className="font-medium">{it.size}</span>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700 font-semibold">Quantity</span>
-                        <span className="font-medium">{it.qty}</span>
-                      </div>
-
-                      <div className="mt-2 flex items-center justify-between">
-                        <span className="text-gray-700 font-semibold">Total Price</span>
-                        <span className="font-bold">
-                          Rs. {(Number(it.productId.price) * it.qty).toLocaleString()}
-                        </span>
-                      </div>
-
-                      <div className="mt-2 flex items-center gap-3 justify-between">
-                        <span className="text-xs text-gray-600">In Review</span>
-                        <span onClick={() => removeOne(it.productId._id, it.size)}>
-                          <Buttons context="Remove" combo="redTransparent" icon={Trash2} />
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-
-            <div className="mt-6 flex justify-center">
-              {getToken() !== '' ? (
-                <Link href="#">
-                  <Buttons
-                    context={`REVIEW TOTAL -  Rs. ${totalValue.toLocaleString()}`}
-                    icon={ShoppingCart}
-                    disabled={review.length === 0}
-                  />
-                </Link>
-              ) : (
-                <Link href="/Login">
-                  <Buttons
-                    context={`REVIEW TOTAL -  Rs. ${totalValue.toLocaleString()}`}
-                    icon={ShoppingCart}
-                    disabled={review.length === 0}
-                  />
-                </Link>
+      return (
+        <article
+          key={`${productIdRaw ?? 'missing'}-${it.size}`}
+          className={`rounded-xl bg-white shadow-sm ring-1 gap-5 lg:min-w-[300px] ${
+            unavailable ? 'ring-red-300' : 'ring-black/40'
+          }`}
+        >
+          <div className="p-3">
+            <div className="relative mx-auto h-40 w-full overflow-hidden rounded-lg">
+              <Image
+                src={imgSrc}
+                alt={productName}
+                fill
+                className="object-cover"
+              />
+              {unavailable && (
+                <span className="absolute top-2 left-2 rounded-md bg-red-600/90 px-2 py-1 text-[11px] font-semibold text-white">
+                  Unavailable / Deleted
+                </span>
               )}
             </div>
-          </section>
+
+            <div className="mt-3 rounded-lg border flex flex-col gap-2 border-gray-200 px-3 py-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-700 font-semibold">Product Name</span>
+                <span className={`font-medium ${unavailable ? 'text-red-700' : 'text-gray-900'}`}>
+                  {productName}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-gray-700 font-semibold">Size</span>
+                <span className="font-medium">{it.size}</span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-gray-700 font-semibold">Quantity</span>
+                <span className="font-medium">{it.qty}</span>
+              </div>
+
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-gray-700 font-semibold">Total Price</span>
+                <span className="font-bold">
+                  {unavailable ? (
+                    <span className="text-red-700">N/A</span>
+                  ) : (
+                    <>Rs. {lineTotal.toLocaleString()}</>
+                  )}
+                </span>
+              </div>
+
+              <div className="mt-2 flex items-center gap-3 justify-between">
+                <span className={`text-xs ${unavailable ? 'text-red-700' : 'text-gray-600'}`}>
+                  {unavailable ? 'This product has been removed from the catalog.' : 'In Review'}
+                </span>
+
+                {/* Only enable remove if we have some id to send */}
+                <span>
+                <Buttons
+                  context={unavailable ? 'Remove entry' : 'Remove'}
+                  combo="redTransparent"
+                  icon={Trash2}
+                  onClick={() => {
+                    removeOne(productIdRaw ?? null, it.size);
+                  }}
+                />
+                </span>
+              </div>
+            </div>
+          </div>
+        </article>
+      );
+    })}
+  </div>
+
+  <div className='flex justify-end my-5'>
+    <span className='w-fit h-fit  p-2 text-[#278039] rounded shadow-md shadow-[#278039] border-dark-green border-2
+                   font-bold text-md bg-[#dbbf92]'>
+        TOTAL -  Rs.{review
+      .filter((it) => typeof it.productId === 'object' && it.productId)
+      .reduce((sum, it) => sum + Number((it.productId as Product).price ?? 0) * it.qty, 0)
+      .toLocaleString()}
+    </span>
+  </div>
+  {/* Use only available items to compute the total */}
+  <div className="mt-6 flex justify-center">
+    
+    {getToken() !== '' ? (
+      <div>
+        
+        <Buttons
+        context={`ADD TO CART`}
+        icon={ShoppingCart}
+        disabled={review.filter((it) => typeof it.productId === 'object' && it.productId && it.status === 'in_review').length === 0}
+        items={bulkItems}
+        />
+      </div>
+      
+    ) : (
+      <Link href="/Login">
+        <Buttons
+          context={`REVIEW TOTAL -  Rs. ${review
+            .filter((it) => typeof it.productId === 'object' && it.productId)
+            .reduce((sum, it) => sum + Number((it.productId as Product).price ?? 0) * it.qty, 0)
+            .toLocaleString()}`}
+          icon={ShoppingCart}
+          disabled={
+            review.filter((it) => typeof it.productId === 'object' && it.productId).length === 0
+          }
+        />
+      </Link>
+    )}
+  </div>
+</section>
+
         </div>
       </main>
       <Footer />

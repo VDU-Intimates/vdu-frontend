@@ -1,10 +1,9 @@
-
 "use client";
 import React from "react";
 import type { LucideIcon } from "lucide-react";
 import toast from "react-hot-toast";
 
-const API_BASE = "http://localhost:5000"; // adjust to your backend
+const API_BASE = "http://localhost:5000";
 
 const colorCombos = {
   greenBeige: {
@@ -23,6 +22,13 @@ const colorCombos = {
 
 type ComboKey = keyof typeof colorCombos;
 
+// Input shape for bulk adds
+export type AddToCartItem = {
+  productId: string;     // accepts Mongo _id OR business productId
+  size: string;
+  quantity?: number;
+};
+
 type ButtonProps = {
   context: string;
   icon?: LucideIcon;
@@ -31,10 +37,13 @@ type ButtonProps = {
   onClick?: React.MouseEventHandler<HTMLButtonElement>;
   className?: string;
 
-  // Needed for cart API
+  /** Single add (legacy) */
   productId?: string;
   size?: string;
   quantity?: number;
+
+  /** Bulk add */
+  items?: AddToCartItem[];
 };
 
 const Buttons = ({
@@ -47,64 +56,75 @@ const Buttons = ({
   productId,
   size,
   quantity = 1,
+  items,
 }: ButtonProps) => {
   const { base, hover } = colorCombos[combo];
 
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = async (e) => {
-    // always run custom handler first
     if (onClick) onClick(e);
-
     if (disabled) return;
 
-    // Check if this is an Add to Cart button
-    if (context.trim().toLowerCase() === "add to cart") {
-      try {
-        const token = localStorage.getItem("access_token");
-        if (!token) {
-          alert("Please log in first.");
-          toast("")
-          return;
-        }
+    // Only run "add to cart" behavior if text implies so OR bulk items provided
+    const isAddToCart = items?.length || context.trim().toLowerCase().includes("add to cart");
 
-        if (!productId || !size) {
-          console.error("Missing productId or size for addToCart");
-          return;
-        }
+    if (!isAddToCart) return;
 
-        const res = await fetch(`${API_BASE}/api/cart`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ productId, size, quantity }),
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.message || "Failed to add to cart");
-
-        toast.success("Added to cart ");
-
-      } catch (err) {
-        toast.error("Add to Cart failed")
-        console.error(":", err);
+    try {
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        toast.error("Please log in first.");
+        return;
       }
+
+      // Prefer bulk payload when items are provided
+      const payload =
+        Array.isArray(items) && items.length > 0
+          ? { items: items.map((it) => ({ ...it, quantity: it.quantity ?? 1 })) }
+          : { productId, size, quantity };
+
+      // Validate minimal payload
+      if (!("items" in payload)) {
+        if (!payload.productId || !payload.size) {
+          console.error("Missing productId or size for addToCart");
+          toast.error("Missing product id or size");
+          return;
+        }
+      } else if (payload.items?.length === 0) {
+        toast("No items selected");
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/api/cart`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.message || `HTTP ${res.status}`);
+
+      const msg =
+        data?.message ||
+        (`items` in payload
+          ? `${payload.items?.length} item(s) added to cart`
+          : "Added to cart");
+      toast.success(msg);
+      window.location.reload();
+    } catch (err) {
+      console.error("Add to cart failed:", err);
+      toast.error("Add to Cart failed");
     }
   };
 
   return (
     <button
       onClick={handleClick}
-
       disabled={disabled}
       className={[
         "w-fit h-[40px] px-3 border-2 font-bold rounded-2xl transition-all duration-300 shadow-md",
         "flex items-center justify-center gap-3 max-xl:py-6 max-xl:text-xs lg:text-sm",
         base,
-        disabled
-          ? "opacity-50 cursor-not-allowed pointer-events-none hover:shadow-none"
-          : `cursor-pointer ${hover}`,
-
+        disabled ? "opacity-50 cursor-not-allowed hover:shadow-none" : `cursor-pointer ${hover}`,
         className,
       ].join(" ")}
     >
@@ -113,6 +133,5 @@ const Buttons = ({
     </button>
   );
 };
-
 
 export default Buttons;
