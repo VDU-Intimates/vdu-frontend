@@ -3,9 +3,9 @@ import Link from 'next/link'
 import React from 'react'
 
 const CATEGORIES = [
-    { name: "WOMEN", image: "/assets/images/hero_image_1.jpg", link: "/category/women" },
-    { name: "MEN", image: "/assets/images/hero_image_2.jpg", link: "/category/men" },
-    { name: "KIDS", image: "/assets/images/hero_image_3.jpg", link: "/category/kids" },
+    { name: "WOMEN", image: "/assets/images/hero_image_1.jpg", link: "/AllProducts" },
+    { name: "KIDS", image: "/assets/images/kids.jpg", link: "/AllProducts" },
+    { name: "MENS", image: "/assets/images/men.jpg", link: "/AllProducts" },
   ];
 
 const ShopByCategory = () => {
