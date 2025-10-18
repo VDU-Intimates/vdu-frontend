@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { CreditCard, ShoppingCart, Star, ArrowRight } from "lucide-react";
 import Buttons from "../../common-components/button";
+import Link from "next/link";
 
 function getErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -169,7 +170,9 @@ const BestSelling = () => {
               </div>
 
               <div className="absolute bottom-5 left-5">
+                <Link href="/AllProducts">
                 <Buttons context="Shop More" icon={ArrowRight} />
+                </Link>
               </div>
             </div>
           </aside>

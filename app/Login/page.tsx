@@ -7,6 +7,7 @@ import Image from "next/image";
 import NavBar from "../components/nav-bar/nav-bar";
 import Footer from "../components/footer/footer";
 import toast from "react-hot-toast";
+import PrimaryButton from "../components/common-components/primary-button";
 
 type ApiUser = {
   userId: string;
@@ -392,15 +393,9 @@ const Login: React.FC = () => {
                     </div>
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={busy}
-                    className={`w-full rounded-xl py-2.5 font-semibold transition ${
-                      busy ? "bg-neutral-200 text-neutral-500 cursor-not-allowed" : "bg-[#2f432a] text-[#eadfcd] hover:opacity-90"
-                    }`}
-                  >
-                    {busy ? "Signing in..." : "Sign in"}
-                  </button>
+
+
+                  <PrimaryButton type="submit" className="w-full" disabled = {busy} context={busy ? "Signing in..." : "Sign in"}/>
 
                   <div className="relative my-4">
                     <div className="absolute inset-0 flex items-center">

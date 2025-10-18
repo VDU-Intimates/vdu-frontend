@@ -296,18 +296,6 @@ const refreshCartCount = async () => {
               {userMenuOpen && (
                 <div className="absolute flex flex-col right-0 mt-2 w-56 rounded-xl border z-[1000] border-black/5 bg-white shadow-lg p-1 text-sm">
                   <Link
-                    href="/OrderHistory"
-                    className="block rounded-lg px-3 py-2 hover:bg-neutral-50"
-                  >
-                    Order history
-                  </Link>
-                  <Link
-                    href="/TrackOrder"
-                    className="block rounded-lg px-3 py-2 hover:bg-neutral-50"
-                  >
-                    Track orders
-                  </Link>
-                  <Link
                     href="/Profile"
                     className="w-full text-left rounded-lg px-3 py-2 hover:bg-neutral-50"
                   >
