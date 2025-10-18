@@ -121,7 +121,7 @@ const NewArrivals = () => {
         </div>
 
         <div className="flex justify-center mt-6">
-          <Link href="/AllProduct">
+          <Link href="/AllProducts">
             <Buttons context="Shop More" combo="beigeGreen" />
           </Link>
         </div>
