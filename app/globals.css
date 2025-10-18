@@ -1,1 +1,126 @@
+@import url('https://fonts.googleapis.com/css2?family=Charm:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+
 @import "tailwindcss";
+@import "tw-animate-css";
+
+
+
+@theme{
+
+    /* Fonts */
+    --font-charm: 'Charm';
+    --font-montserrat: 'Montserrat';
+    --font-poppins:'Poppins';
+    /* Colors */
+    --color-beige: #EADFCD;
+    --color-light-green : #306D42;
+    --color-dark-green : #2F432A;
+
+    
+
+    /* Animations */
+    --animate-rotate-border: border-rotate 2s linear infinite;
+
+    @keyframes border-rotate {
+      to{
+        --border-angle: 360deg;
+      }
+    }
+
+}
+
+@property --border-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+
+/* Hide native scrollbars while preserving scroll behavior */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Tweak navbar brand area between 769px and 887px */
+@media (min-width: 769px) and (max-width: 887px) {
+  /* Left brand row: let it flex and reduce gap */
+  .top-navbar > div > div:first-child {
+    gap: 3rem;            /* reduce logo–title gap */
+    flex: 1 1 auto;         /* allow brand row to shrink */
+    min-width: 0;           /* enable child text to wrap inside */
+  }
+
+  /* Tagline: smaller font and allow wrapping (no overlap) */
+  .top-navbar > div > div:first-child h2 {
+    font-size: 1.5rem;    /* Tailwind text-lg */
+    white-space: normal;    /* allow wrapping */
+    overflow: visible;      /* don't clip */
+    text-overflow: clip;    /* no ellipsis */
+  }
+}
+
+/* === shadcn minimal variables (no global resets) === */
+:root {
+  --background: 255 255 255;             /* white */
+  --foreground: 15 23 42;                 /* slate-900 */
+
+  --muted: 241 245 249;
+  --muted-foreground: 100 116 139;
+
+  --border: 226 232 240;
+  --input: 226 232 240;
+  --ring: 48 109 66;                      /* your light-green */
+
+  --primary: 48 109 66;                   /* your light-green */
+  --primary-foreground: 255 255 255;
+
+  --secondary: 234 223 205;               /* your navbar beige */
+  --secondary-foreground: 47 67 42;       /* your dark-green */
+
+  --destructive: 239 68 68;
+  --destructive-foreground: 255 255 255;
+
+  --accent: 234 223 205;
+  --accent-foreground: 47 67 42;
+
+  --popover: 255 255 255;
+  --popover-foreground: 15 23 42;
+
+  --card: 255 255 255;
+  --card-foreground: 15 23 42;
+
+  --radius: 12px; /* matches your rounded aesthetic */
+}
+
+/* Optional dark theme (only if you plan to use it) */
+.dark {
+  --background: 8 13 20;
+  --foreground: 241 245 249;
+  --border: 30 41 59;
+  --input: 30 41 59;
+  --ring: 48 109 66;
+
+  --primary: 48 109 66;
+  --primary-foreground: 255 255 255;
+
+  --secondary: 47 67 42;
+  --secondary-foreground: 234 223 205;
+
+  --muted: 15 23 42;
+  --muted-foreground: 148 163 184;
+
+  --accent: 47 67 42;
+  --accent-foreground: 234 223 205;
+
+  --destructive: 239 68 68;
+  --destructive-foreground: 255 255 255;
+
+  --card: 8 13 20;
+  --card-foreground: 241 245 249;
+}
+
