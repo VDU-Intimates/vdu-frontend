@@ -332,6 +332,7 @@ const refreshCartCount = async () => {
                 </div>
               )}
             </div>
+
               
             ) :  (
               <Link href="/Login">
@@ -349,6 +350,7 @@ const refreshCartCount = async () => {
               </Link>
             ) }
           </div>
+
         </div>
 
         <button
