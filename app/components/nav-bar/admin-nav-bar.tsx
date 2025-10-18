@@ -126,7 +126,7 @@ const AdminNavBar = () => {
   };
 
   const NavLinks = ({ isMobile = false }: { isMobile?: boolean }) => (
-    <nav className="flex flex-col space-y-2">
+    <nav className="flex flex-col space-y-2 h-full justify-evenly">
       {menuItems.map((item) => {
         const isActive = pathname.startsWith(item.path);
         return (

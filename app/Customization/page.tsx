@@ -535,16 +535,77 @@ const CustomizationPage = () => {
   async function previewDesign() {
     const canvas = fRef.current;
     if (!canvas) return;
-    const zonePng = canvas.toDataURL({ format: 'png', multiplier: 3, enableRetinaScaling: true });
+  
+    // Generate high-quality image
+    const zonePng = canvas.toDataURL({
+      format: 'png',
+      multiplier: 3,
+      enableRetinaScaling: true,
+    });
+  
     let finalOut = zonePng;
-    try { finalOut = await composeDesignOnBase(zonePng, productBg); } catch {}
+    try {
+      finalOut = await composeDesignOnBase(zonePng, productBg);
+    } catch (err) {
+      console.warn('Preview composition failed, showing raw design instead:', err);
+    }
+  
+    // Open a new tab for a stylish preview
     const win = window.open('', '_blank');
     if (win) {
-      win.document.write('<title>Design Preview</title>');
-      win.document.write(`<img src="${finalOut}" style="display:block;max-width:50%;height:auto;" />`);
+      const title = '✨ VDU Intimates — Design Preview ✨';
+      const bgGradient =
+        'linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%)';
+  
+      win.document.write(`
+        <html>
+          <head>
+            <title>${title}</title>
+            <style>
+              body {
+                margin: 0;
+                padding: 2rem;
+                background: ${bgGradient};
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                font-family: 'Poppins', sans-serif;
+                color: #2f432a;
+                text-align: center;
+                animation: fadeIn 1s ease-in-out;
+              }
+              img {
+                max-width: 60%;
+                height: auto;
+                border-radius: 16px;
+                box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+                transition: transform 0.4s ease, box-shadow 0.4s ease;
+              }
+              img:hover {
+                transform: scale(1.02);
+                box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+              }
+              h1 {
+                font-size: 1.5rem;
+                margin-bottom: 1.2rem;
+              }
+              @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
+            </style>
+          </head>
+          <body>
+            <h1>${title}</h1>
+            <img src="${finalOut}" alt="Design Preview" />
+          </body>
+        </html>
+      `);
       win.document.close();
     }
   }
+  
 
   /* ===========================
      UI

@@ -137,20 +137,17 @@ export default function AdminDashboard() {
 
         // designs (protected? include token if required)
         const token = localStorage.getItem("access_token");
-        const desRes = await fetch(`${API_BASE}/api/designs`, {
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
+        const res = await fetch(`${API_BASE}/api/designs/latest?limit=5`, {
+          headers: { Authorization: `Bearer ${token}` },
           cache: "no-store",
         });
-        let desPayload: { data?: Design[] } = {};
-        if (desRes.ok) desPayload = await desRes.json();
+        const { data: latest } = await res.json();
+        setDesigns(latest); // render directly
 
         if (!cancelled) {
           setProducts(prodPayload.data || []);
           setProductsTotal(prodPayload.total || (prodPayload.data?.length ?? 0));
-          setDesigns(desPayload.data || []);
+          // setDesigns(desPayload.data || []);
         }
       } catch (e) {
         if (!cancelled) setErr(e instanceof Error ? e.message : "Failed to load dashboard data");
@@ -246,10 +243,10 @@ export default function AdminDashboard() {
       .slice(0, 6);
   }, [products]);
 
-  const latestDesigns = React.useMemo(
-    () => [...designs].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)).slice(0, 5),
-    [designs]
-  );
+  // const latestDesigns = React.useMemo(
+  //   () => [...designs].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)).slice(0, 5),
+  //   [designs]
+  // );
 
   return (
     <div className="flex min-h-screen bg-[#f7f5ef]">
@@ -488,14 +485,14 @@ export default function AdminDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {latestDesigns.length === 0 && (
+                  {designs.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={5} className="text-sm text-muted-foreground">
                         No designs yet.
                       </TableCell>
                     </TableRow>
                   )}
-                  {latestDesigns.map((d) => (
+                  {designs.map((d) => (
                     <TableRow key={d._id}>
                       <TableCell>
                         {/* eslint-disable-next-line @next/next/no-img-element */}

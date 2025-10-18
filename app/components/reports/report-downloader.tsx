@@ -34,10 +34,12 @@ const ReportDownloader = ({
   fileNamePrefix, 
   showDateSelectors = true 
 }: ReportDownloaderProps) => {
-  const currentYear = new Date().getFullYear();
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
   const [year, setYear] = useState(currentYear);
-  const [month, setMonth] = useState(new Date().getMonth() + 1);
+  const [month, setMonth] = useState(currentDate.getMonth() + 1);
   const [isLoading, setIsLoading] = useState(false);
+  const day = String(currentDate.getDate()).padStart(2, "0");
 
   const handleDownload = async () => {
     setIsLoading(true);
@@ -53,7 +55,8 @@ const ReportDownloader = ({
       // 1. Build the URL dynamically based on props
       let url = `http://localhost:5000/api${apiEndpoint}`;
       if (showDateSelectors) {
-        url += `?year=${year}&month=${month}`;
+        
+        url += `?year=${year}&month=${month}&day=${day}`;
       }
 
       const response = await fetch(url, {
@@ -74,7 +77,7 @@ const ReportDownloader = ({
       let filename = `${fileNamePrefix}.csv`;
       if (showDateSelectors) {
         const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
-        filename = `${fileNamePrefix}-${monthName}-${year}.csv`;
+        filename = `${fileNamePrefix}-${day}-${monthName}-${year}.csv`;
       }
       link.setAttribute('download', filename);
       
