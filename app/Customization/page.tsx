@@ -721,12 +721,12 @@ const CustomizationPage = () => {
                     <div className="flex justify-between max-lg:justify-start gap-5">
                       <label
                         htmlFor="image-selector"
-                        className="inline-flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-2 text-sm font-medium shadow-sm hover:bg-gray-200 transition-all duration-300 cursor-pointer border"
+                        className="inline-flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-2 text-sm font-medium shadow-sm hover:bg-gray-200 transition-all duration-300 cursor-pointer border overflow-hidden relative"
                       >
                         <Upload className="h-4 w-4" /> Choose File
                         <input
                           type="file"
-                          className="hidden"
+                          className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
                           id="image-selector"
                           ref={fileInputRef}
                           onChange={handleAddImage}
